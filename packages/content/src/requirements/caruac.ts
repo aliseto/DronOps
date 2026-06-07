@@ -1,4 +1,4 @@
-// AUTO-GENERATED from docs/dronops_requirements_seed.sql (seed v1.0 + Oman v1.1 (2026-06-07)).
+// AUTO-GENERATED from docs/dronops_requirements_seed.sql (seed v1.0 + Oman v1.1 + ISO v1.2 (2026-06-07)).
 // Do not hand-edit — re-run scripts/convert-seed.mjs. Summaries are verbatim,
 // QM-reviewed content; kind/jurisdiction are derived per the seed conversion rules.
 import type { RequirementDef } from "./types";

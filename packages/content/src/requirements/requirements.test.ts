@@ -3,10 +3,12 @@ import { REQUIREMENTS, getRequirement } from "./index";
 import { RECORD_TYPES } from "./types";
 
 describe("requirement content", () => {
-  // Seed v1.0 (54) + Oman addendum v1.1 (18) = 72 clause-anchored requirements.
+  // Seed v1.0 (54) + Oman addendum v1.1 (18) + ISO addendum v1.2 (20) = 92
+  // clause-anchored requirements across 7 frameworks. If the parse yields any
+  // other count, that's a converter/parse bug to catch — not a number to soften.
   it("loads every requirement with unique ids", () => {
-    expect(REQUIREMENTS).toHaveLength(72);
-    expect(new Set(REQUIREMENTS.map((r) => r.id)).size).toBe(72);
+    expect(REQUIREMENTS).toHaveLength(92);
+    expect(new Set(REQUIREMENTS.map((r) => r.id)).size).toBe(92);
   });
 
   it("includes the Oman addendum with correct derivation", () => {
@@ -26,8 +28,14 @@ describe("requirement content", () => {
 
   it("derives kind and jurisdiction per the seed rules", () => {
     const guidanceFrameworks = new Set(["GACA AC 107-01", "CAA AWR 033"]);
+    const standardFrameworks = new Set(["ISO 9001"]);
     for (const r of REQUIREMENTS) {
-      expect(r.kind).toBe(guidanceFrameworks.has(r.framework) ? "guidance" : "regulation");
+      const expected = standardFrameworks.has(r.framework)
+        ? "standard"
+        : guidanceFrameworks.has(r.framework)
+          ? "guidance"
+          : "regulation";
+      expect(r.kind).toBe(expected);
     }
     expect(getRequirement("CARUAC:015h")?.jurisdiction).toBe("UAE-Federal");
     expect(getRequirement("DCAR:OM-OCC72")?.jurisdiction).toBe("UAE-Dubai");
@@ -46,7 +54,13 @@ describe("requirement content", () => {
     expect(occ72?.summary).toContain("72 hours");
   });
 
-  it("does not invent ISO requirements (separate authoring task)", () => {
-    expect(REQUIREMENTS.filter((r) => r.jurisdiction === "ISO")).toHaveLength(0);
+  it("includes the ISO 9001 addendum as a standard (not a regulator)", () => {
+    const iso = REQUIREMENTS.filter((r) => r.jurisdiction === "ISO");
+    expect(iso).toHaveLength(20);
+    for (const r of iso) {
+      expect(r.framework).toBe("ISO 9001");
+      expect(r.kind).toBe("standard");
+    }
+    expect(getRequirement("ISO9001:4.1")?.kind).toBe("standard");
   });
 });

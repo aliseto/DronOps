@@ -2,9 +2,11 @@
  * Manual-suite preload content (PR-015): the parameter schema that templatizes
  * the Aironov AIR- suite per operator, the preload manifest, the form-template
  * seeds, and section-stub bodies with {{group.key}} variables. Verbatim bodies
- * arrive as a later content commit; this is the stub-first pipeline (spec §6 +
- * amendments v1.1).
+ * amendments v1.1). Verbatim AIR-MAN-001/002 bodies landed via the content drop.
  */
+
+import { man001 } from "./manual-suite/bodies/man001";
+import { man002 } from "./manual-suite/bodies/man002";
 
 export type ParamFieldType =
   | "text"
@@ -48,8 +50,36 @@ export const PARAM_GROUPS: ParamGroup[] = [
       { key: "trade_name", label: "Trade name", type: "text", required: true },
       { key: "registered_address", label: "Registered address", type: "text", required: true },
       { key: "hq_city_country", label: "HQ city, country", type: "text", required: true },
+      { key: "operating_geography", label: "Operating geography", type: "text", default: "GCC + Indonesia" },
+      { key: "headcount_band", label: "Headcount band", type: "text", default: "6–15" },
+      { key: "doc_prefix", label: "Document prefix", type: "text", default: "AIR" },
       { key: "email", label: "Email", type: "text", required: true },
       { key: "phone", label: "Phone", type: "text" },
+    ],
+  },
+  {
+    id: "jurisdictions",
+    label: "Jurisdictions",
+    fields: [
+      {
+        key: "active_display",
+        label: "Active authorities (cover line)",
+        type: "text",
+        default: "GCAA · DCAA · GACA · CAA Oman",
+      },
+    ],
+  },
+  {
+    id: "roles",
+    label: "Role titles",
+    fields: [
+      { key: "accountable_manager_title", label: "Accountable manager title", type: "text", default: "Managing Director" },
+      { key: "ops_manager_title", label: "Operations manager title", type: "text", default: "Operations Manager" },
+      { key: "quality_lead_title", label: "Quality lead title", type: "text", default: "Quality & Compliance Lead" },
+      { key: "chief_pilot_title", label: "Chief pilot title", type: "text", default: "Chief Pilot" },
+      { key: "finance_lead_title", label: "Finance lead title", type: "text", default: "Finance Lead" },
+      { key: "commercial_lead_title", label: "Commercial lead title", type: "text", default: "Commercial Lead" },
+      { key: "project_manager_title", label: "Project manager title", type: "text", default: "Project Manager" },
     ],
   },
   {
@@ -91,6 +121,15 @@ export const PARAM_GROUPS: ParamGroup[] = [
       // amendment B3 — structured recency rule (seeds the currency engine + §20)
       { key: "recency_min_flights", label: "Recency: min flights", type: "number", default: 3 },
       { key: "recency_window_days", label: "Recency: window (days)", type: "number", default: 90 },
+      { key: "annual_hours", label: "Annual flying hours minimum", type: "number", default: 20 },
+      // amendment B2 — §23 financial approval matrix band edges (AED), values editable
+      { key: "fin_b1_max", label: "Approval band 1 max (AED)", type: "number", default: 5000 },
+      { key: "fin_b1_max_plus", label: "Approval band 2 start (AED)", type: "number", default: 5001 },
+      { key: "fin_b2_max", label: "Approval band 2 max (AED)", type: "number", default: 25000 },
+      { key: "fin_b2_max_plus", label: "Approval band 3 start (AED)", type: "number", default: 25001 },
+      { key: "fin_b3_max", label: "Approval band 3 max (AED)", type: "number", default: 100000 },
+      { key: "fin_b3_max_plus", label: "Approval band 4 start (AED)", type: "number", default: 100001 },
+      { key: "fin_b4_max", label: "Approval band 4 max (AED)", type: "number", default: 500000 },
       { key: "insurance_liability_limit", label: "Insurance liability limit", type: "money", required: true },
       // amendment B1 — bid bands (structure fixed, values editable)
       {
@@ -159,31 +198,19 @@ export const FORM_MANIFEST: ManifestForm[] = [
   { code: "POSTFLIGHT-01", title: "Post-flight report", appliesTo: "postflight" },
   { code: "JSA-01", title: "Job safety analysis", appliesTo: "risk_assessment" },
   { code: "BIDNOBID-01", title: "Bid / no-bid", appliesTo: "generic" },
-  { code: "CHANGEREQ-01", title: "Change request", appliesTo: "generic" },
-  { code: "IMPROVEMENT-01", title: "Improvement suggestion", appliesTo: "generic" },
+  { code: "CHANGEREQ-01", title: "Project change request", appliesTo: "generic" },
 ];
 
 /**
- * Section-stub bodies with {{group.key}} variables and [[juris:KEY]]…[[/juris]]
- * jurisdiction blocks (rendered only for enabled jurisdictions). Verbatim text
- * lands in the later content commit; these stubs exercise the pipeline.
+ * Document bodies. MAN-001/002 are the verbatim owner-supplied templates
+ * (content drop). The remaining POL/SOP are section stubs until their verbatim
+ * bodies land. {{group.key}} variables, [[jurisdiction:KEYS]]…[[/jurisdiction]]
+ * conditional blocks (KEYS '+'-separated; 'UAE' = Federal+Dubai), and
+ * [[param:…]]…[[/param]] configurable-default wrappers.
  */
 export const STUB_BODIES: Record<string, string> = {
-  "MAN-001": `# Standards & Operations Manual — {{organization.legal_name}} ({{organization.trade_name}})
-§1 Organization: {{organization.registered_address}}, {{organization.hq_city_country}}.
-§2 Postholders: Accountable Manager {{postholders.accountable_manager}}; Quality Manager {{postholders.quality_manager}}; Operations Manager {{postholders.operations_manager}}.
-§6 Records control — retention {{thresholds.records_retention_months}} months (platform rule).
-§20 Competence & pilot currency — recency: ≥{{thresholds.recency_min_flights}} flights in {{thresholds.recency_window_days}} days on the airframe class.
-§23 Financial controls & approval authority — see approval matrix.
-§26 Insurance & legal register — liability limit {{thresholds.insurance_liability_limit}}. The live register lives in DronOps (External documents + credentials + aircraft registrations).
-Appendix C — Document & forms register: forms are platform modules (see Forms).`,
-  "MAN-002": `# Flight Operations Manual — {{organization.trade_name}}
-Ch.1 Scope & regulatory alignment.
-[[juris:UAE-Federal]]Ch.1.2 GCAA (CAR-UAC) operations.[[/juris]]
-[[juris:UAE-Dubai]]Ch.1.2 DCAA (DCAR-UAS / DUOSAM) operations.[[/juris]]
-[[juris:KSA]]Ch.1.2 GACA (GACAR 107) operations.[[/juris]]
-[[juris:IDN]]Ch.1.2 DGCA (PM 37/2020) operations.[[/juris]]
-Ch.2 Crew — Visual Observer and stop-work authority are universal.`,
+  "MAN-001": man001,
+  "MAN-002": man002,
   "POL-001": `# Quality Policy — {{organization.legal_name}}. Signed: {{postholders.accountable_manager}}.`,
   "POL-002": `# QHSE Policy & Code of Conduct — {{organization.legal_name}}.`,
   "POL-003": `# IT Acceptable Use — custodian {{postholders.it_custodian}}.`,
@@ -196,27 +223,64 @@ Ch.2 Crew — Visual Observer and stop-work authority are universal.`,
   "SOP-014": `# Contract Review — finance lead {{postholders.finance_lead}}.`,
 };
 
-const JURIS_BLOCK = /\[\[juris:([A-Za-z-]+)\]\]([\s\S]*?)\[\[\/juris\]\]/g;
+const COMMENT = /<!--[\s\S]*?-->/g;
+const JURIS_BLOCK = /\[\[jurisdiction:([^\]]+)\]\]([\s\S]*?)\[\[\/jurisdiction\]\]/g;
+const PARAM_BLOCK = /\[\[param:[^\]]*\]\]([\s\S]*?)\[\[\/param\]\]/g;
 
-/** Render a stub body: strip disabled jurisdiction blocks, substitute variables. */
+/** A jurisdiction block renders if ANY listed key is enabled. KEYS are
+ * '+'-separated; the alias 'UAE' expands to UAE-Federal + UAE-Dubai. */
+function jurisdictionEnabled(list: string, enabled: readonly string[]): boolean {
+  return list
+    .split("+")
+    .flatMap((k) => (k.trim() === "UAE" ? ["UAE-Federal", "UAE-Dubai"] : [k.trim()]))
+    .some((k) => enabled.includes(k));
+}
+
+/**
+ * Render a document body: strip the templatization legend comment, drop disabled
+ * jurisdiction blocks, unwrap [[param:…]] configurable defaults, then substitute
+ * {{group.key}} variables (reporting any unresolved ones).
+ */
 export function renderManualBody(
   body: string,
   params: Record<string, Record<string, unknown>>,
   enabledJurisdictions: readonly string[],
 ): { rendered: string; missing: string[] } {
   const missing: string[] = [];
-  const withJuris = body.replace(JURIS_BLOCK, (_m, key: string, inner: string) =>
-    enabledJurisdictions.includes(key) ? inner : "",
-  );
-  const rendered = withJuris.replace(/\{\{([\w]+)\.([\w]+)\}\}/g, (_m, group: string, key: string) => {
-    const v = params[group]?.[key];
-    if (v == null || v === "") {
-      missing.push(`${group}.${key}`);
-      return `{{${group}.${key}}}`;
-    }
-    return String(v);
-  });
+  const rendered = body
+    .replace(COMMENT, "")
+    .replace(JURIS_BLOCK, (_m, list: string, inner: string) =>
+      jurisdictionEnabled(list, enabledJurisdictions) ? inner : "",
+    )
+    .replace(PARAM_BLOCK, (_m, inner: string) => inner)
+    .replace(/\{\{(\w+)\.(\w+)\}\}/g, (_m, group: string, key: string) => {
+      const v = params[group]?.[key];
+      if (v == null || v === "") {
+        missing.push(`${group}.${key}`);
+        return `{{${group}.${key}}}`;
+      }
+      return String(v);
+    });
   return { rendered, missing: [...new Set(missing)] };
+}
+
+/** Fill params with schema defaults for any key the operator hasn't set, so
+ * defaulted role titles / thresholds resolve while truly-required fields block. */
+export function applyParamDefaults(
+  params: Record<string, Record<string, unknown>>,
+): Record<string, Record<string, unknown>> {
+  const out: Record<string, Record<string, unknown>> = {};
+  for (const g of PARAM_GROUPS) {
+    out[g.id] = { ...(params[g.id] ?? {}) };
+    for (const f of g.fields) {
+      if (f.default !== undefined && (out[g.id]![f.key] == null || out[g.id]![f.key] === "")) {
+        out[g.id]![f.key] = f.default;
+      }
+    }
+  }
+  // preserve any groups not in the schema
+  for (const k of Object.keys(params)) if (!out[k]) out[k] = params[k]!;
+  return out;
 }
 
 /** Manifest filtered by org scope (service lines / ops types). */

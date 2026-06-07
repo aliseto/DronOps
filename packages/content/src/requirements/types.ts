@@ -36,8 +36,8 @@ export interface RequirementDef {
   summary: string;
   recordTypes: RecordType[];
   version: string;
-  /** Derived: AC 107-01 → guidance, everything else → regulation. */
-  kind: "regulation" | "guidance";
+  /** Derived: AC 107-01 / AWR 033 → guidance, ISO 9001 → standard, else regulation. */
+  kind: "regulation" | "guidance" | "standard";
   /** Derived from framework (the DB stores only requirement_ref strings). */
   jurisdiction: (typeof JURISDICTION_KEYS)[number];
 }
@@ -50,6 +50,6 @@ export const requirementSchema = z.object({
   summary: z.string().min(1),
   recordTypes: z.array(z.enum(RECORD_TYPES)).min(1),
   version: z.string().min(1),
-  kind: z.enum(["regulation", "guidance"]),
+  kind: z.enum(["regulation", "guidance", "standard"]),
   jurisdiction: z.enum(JURISDICTION_KEYS),
 }) satisfies z.ZodType<RequirementDef>;

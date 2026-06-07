@@ -10,6 +10,7 @@ import {
 } from "@dronops/db/schema";
 import {
   applicableDocs,
+  applyParamDefaults,
   manifestDocNumber,
   renderManualBody,
   STUB_BODIES,
@@ -86,7 +87,7 @@ async function latestRevision(orgId: string, documentId: string) {
 }
 
 export async function previewManualSuite(orgId: string) {
-  const params = await getTemplateParams(orgId);
+  const params = applyParamDefaults(await getTemplateParams(orgId));
   const enabled = await listEnabledJurisdictions(orgId);
   const docs: PreviewDoc[] = [];
   for (const d of applicableDocs(params)) {
@@ -113,7 +114,7 @@ export async function previewManualSuite(orgId: string) {
 }
 
 export async function loadManualSuite(ctx: TenantCtx) {
-  const params = await getTemplateParams(ctx.orgId);
+  const params = applyParamDefaults(await getTemplateParams(ctx.orgId));
   const enabled = await listEnabledJurisdictions(ctx.orgId);
 
   let created = 0;
