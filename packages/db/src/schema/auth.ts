@@ -25,7 +25,7 @@ export const users = pgTable("users", {
   /** Argon/bcrypt hash for the Credentials (email+password) provider. */
   passwordHash: text("password_hash"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}).enableRLS();
 
 export const accounts = pgTable(
   "accounts",
@@ -45,7 +45,7 @@ export const accounts = pgTable(
     session_state: text("session_state"),
   },
   (a) => [primaryKey({ columns: [a.provider, a.providerAccountId] })],
-);
+).enableRLS();
 
 export const sessions = pgTable("sessions", {
   sessionToken: text("session_token").primaryKey(),
@@ -53,7 +53,7 @@ export const sessions = pgTable("sessions", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   expires: timestamp("expires", { withTimezone: true, mode: "date" }).notNull(),
-});
+}).enableRLS();
 
 export const verificationTokens = pgTable(
   "verification_tokens",
@@ -63,7 +63,7 @@ export const verificationTokens = pgTable(
     expires: timestamp("expires", { withTimezone: true, mode: "date" }).notNull(),
   },
   (t) => [primaryKey({ columns: [t.identifier, t.token] })],
-);
+).enableRLS();
 
 /** WebAuthn credentials (passkeys). Used for signature step-up, not login. */
 export const authenticators = pgTable(
@@ -83,7 +83,7 @@ export const authenticators = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (a) => [primaryKey({ columns: [a.userId, a.credentialId] })],
-);
+).enableRLS();
 
 /**
  * Short-lived WebAuthn challenges for enrollment and signature step-up. A
@@ -103,4 +103,4 @@ export const webauthnChallenges = pgTable("webauthn_challenges", {
   recordHash: text("record_hash"),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}).enableRLS();

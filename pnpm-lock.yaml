@@ -116,6 +116,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@dronops/content':
+        specifier: workspace:*
+        version: link:../../packages/content
       '@dronops/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -187,6 +190,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.9(@types/node@22.19.20)(jsdom@25.0.1)(lightningcss@1.32.0)
 
   packages/db:
     dependencies:

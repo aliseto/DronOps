@@ -15,6 +15,20 @@
       "when": 1780820200194,
       "tag": "0001_parched_kree",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780820866094,
+      "tag": "0002_awesome_otto_octavius",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1780821240212,
+      "tag": "0003_cheerful_vin_gonzales",
+      "breakpoints": true
     }
   ]
 }

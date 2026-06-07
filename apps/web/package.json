@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@dronops/content": "workspace:*",
     "@dronops/db": "workspace:*",
     "@dronops/shared": "workspace:*",
     "@dronops/ui": "workspace:*",
