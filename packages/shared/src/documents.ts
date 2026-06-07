@@ -40,3 +40,60 @@ export const isDocumentCategory = (v: string): v is DocumentCategory =>
   (DOCUMENT_CATEGORIES as readonly string[]).includes(v);
 
 export type RevisionStatus = "draft" | "in_review" | "approved" | "obsolete";
+
+/**
+ * External documents (certs, approvals, insurance) have their OWN status model
+ * driven by review_date — they never enter the approval lifecycle.
+ */
+export type ExternalStatus = "valid" | "review-due" | "expired";
+
+export function externalStatus(
+  reviewDueAt: Date | null,
+  now: Date = new Date(),
+  warnDays = 30,
+): { status: ExternalStatus; days: number | null } {
+  if (!reviewDueAt) return { status: "valid", days: null };
+  const days = Math.ceil((reviewDueAt.getTime() - now.getTime()) / 86_400_000);
+  if (days < 0) return { status: "expired", days };
+  if (days <= warnDays) return { status: "review-due", days };
+  return { status: "valid", days };
+}
+
+/**
+ * Explicit document-level status (the register must not conflate two meanings):
+ * - external → its own valid / review-due / expired model.
+ * - else: if a current APPROVED revision exists → "effective"; a newer in-flight
+ *   revision is surfaced as a SECONDARY badge so an auditor never reads
+ *   "Effective" and misses a pending change.
+ * - else → the latest revision's status (draft / in_review).
+ */
+export interface DocumentStatusResult {
+  primary:
+    | { kind: "approval"; status: RevisionStatus }
+    | { kind: "external"; status: ExternalStatus; days: number | null };
+  inFlight?: { revNo: number; status: "draft" | "in_review" };
+}
+
+export function computeDocumentStatus(
+  category: DocumentCategory,
+  revisions: { revNo: number; status: RevisionStatus }[],
+  reviewDueAt: Date | null,
+  now: Date = new Date(),
+): DocumentStatusResult {
+  if (category === "external") {
+    return { primary: { kind: "external", ...externalStatus(reviewDueAt, now) } };
+  }
+  if (revisions.length === 0) {
+    return { primary: { kind: "approval", status: "draft" } };
+  }
+  const approved = revisions.find((r) => r.status === "approved");
+  const latest = revisions.reduce((a, b) => (b.revNo > a.revNo ? b : a));
+  if (approved) {
+    const inFlight =
+      latest.revNo > approved.revNo && (latest.status === "draft" || latest.status === "in_review")
+        ? { revNo: latest.revNo, status: latest.status as "draft" | "in_review" }
+        : undefined;
+    return { primary: { kind: "approval", status: "approved" }, inFlight };
+  }
+  return { primary: { kind: "approval", status: latest.status } };
+}

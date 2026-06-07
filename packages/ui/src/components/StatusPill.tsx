@@ -16,6 +16,7 @@ export interface StatusVocab {
   ncr: "open" | "containment" | "capa-in-progress" | "verify" | "closed" | "false-positive";
   document: "draft" | "in-review" | "effective" | "obsolete";
   coverage: "covered" | "partial" | "gap" | "n-a";
+  external: "valid" | "review-due" | "expired";
 }
 
 export type StatusDomain = keyof StatusVocab;
@@ -62,6 +63,11 @@ const REGISTRY: { [D in StatusDomain]: { [S in StatusVocab[D]]: Entry } } = {
     partial: { tone: "warn", label: "Partial" },
     gap: { tone: "danger", label: "Gap" },
     "n-a": { tone: "neutral", label: "N/A" },
+  },
+  external: {
+    valid: { tone: "ok", label: "Valid" },
+    "review-due": { tone: "warn", label: "Review due" },
+    expired: { tone: "danger", label: "Expired" },
   },
 };
 

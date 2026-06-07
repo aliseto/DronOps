@@ -25,6 +25,13 @@ parallel spreadsheets.** Multi-tenant SaaS posture from PR-001.
   sanctioned write path.
 - **Regulation is content** (`packages/content`); the DB stores only
   `requirement_ref` strings.
+- **Document approval is single-signature by role (QM/AM).** The author MAY
+  approve their own revision — there is deliberately NO author≠approver rule for
+  documents (small operators would deadlock, since the QM authors most
+  controlled docs). Segregation of duties stays strict where the spec demands it
+  (NCR closure verifier ≠ raiser; release-to-service = technician). External
+  documents have their own status model (valid / review-due / expired by review
+  date) and never enter the approval lifecycle.
 
 ## 1. Phase 0 — canonical PR sequence (as built)
 
@@ -82,11 +89,14 @@ Module tables (M1–M7) are added by their milestone PRs per §3.
 Module ordering follows v2 (gates depend on M7; ingestion feeds M5/M7). Exact
 numbers assigned as each PR opens.
 
-**M1 Documents — PR-012–015** (next)
-- PR-012 Documents + revisions: CRUD (no hard delete), revision lifecycle
-  draft→review→approved with approval chain + **signatures** (wires PR-011
-  SignatureCeremony, role-gated via PR-010 guards), single-current rule +
-  obsolete-forever-viewable (D-01/D-02).
+**M1 Documents — PR-012–015**
+- PR-012 Documents + revisions ✅ — CRUD (no hard delete), draft→in_review→
+  approved single-stage approval (one Tier-3 ceremony, role-gated QM/AM, wired to
+  PR-011 SignatureCeremony), signature BOUND to the revision (tamper-evident),
+  obsolete-forever-viewable, server numbering per category (+custom override),
+  six categories with external on its own valid/review-due/expired model and a
+  Replace flow, document↔requirement links, register + tabbed revision drawer
+  (Overview/Revisions/Requirements/History) + role-aware exceptions (D-01/D-02).
 - PR-013 Distribution + acks with overdue escalation (D-03).
 - PR-014 Form template builder (D-05) + instance renderer; instances pin template
   version (hard rule 6).

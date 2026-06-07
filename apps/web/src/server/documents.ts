@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { getAdminDb, withTenant, type TenantCtx, type Tx } from "@dronops/db";
 import {
   auditEvents,
@@ -8,12 +8,16 @@ import {
   documentRevisions,
   documentRequirements,
   signatures,
+  persons,
 } from "@dronops/db/schema";
 import {
   CATEGORY_PREFIX,
   categorySkipsApproval,
+  computeDocumentStatus,
   payloadHash,
   type DocumentCategory,
+  type DocumentStatusResult,
+  type RevisionStatus,
 } from "@dronops/shared";
 import { getCurrentPersonId, requireAnyRole } from "./rbac";
 import { verifyPassword } from "./signing";
@@ -215,7 +219,7 @@ export interface ApproveProof {
 export async function approveRevision(
   ctx: TenantCtx,
   input: { revisionId: string; meaning: string; proof: ApproveProof },
-): Promise<RevisionRow> {
+) {
   await requireAnyRole(ctx.orgId, ctx.userId, ["quality_manager", "accountable_manager"]);
   const signerPersonId = await getCurrentPersonId(ctx.orgId, ctx.userId);
   if (!signerPersonId) throw new Error("No person record for the signer");
@@ -325,7 +329,16 @@ export async function approveRevision(
       .from(documentRevisions)
       .where(eq(documentRevisions.id, input.revisionId))
       .limit(1);
-    return updated!;
+    const [signer] = await tx
+      .select({ name: persons.name })
+      .from(persons)
+      .where(eq(persons.id, signerPersonId))
+      .limit(1);
+    return {
+      revision: updated!,
+      signature: sig,
+      signerName: signer?.name ?? "Unknown",
+    };
   });
 }
 
@@ -390,26 +403,116 @@ export interface DocumentListItem {
   docNo: string;
   category: string;
   title: string;
-  currentStatus: RevisionRow["status"] | null;
+  ownerPersonId: string | null;
   reviewDueAt: Date | null;
   updatedAt: Date;
+  status: DocumentStatusResult;
 }
 
 export async function listDocuments(orgId: string): Promise<DocumentListItem[]> {
-  const rows = await getAdminDb()
+  const db = getAdminDb();
+  const docs = await db.select().from(documents).where(eq(documents.orgId, orgId));
+  const revs = await db
     .select({
-      id: documents.id,
-      docNo: documents.docNo,
-      category: documents.category,
-      title: documents.title,
-      reviewDueAt: documents.reviewDueAt,
-      updatedAt: documents.updatedAt,
-      currentStatus: documentRevisions.status,
+      documentId: documentRevisions.documentId,
+      revNo: documentRevisions.revNo,
+      status: documentRevisions.status,
     })
-    .from(documents)
-    .leftJoin(documentRevisions, eq(documents.currentRevisionId, documentRevisions.id))
-    .where(eq(documents.orgId, orgId));
-  return rows as DocumentListItem[];
+    .from(documentRevisions)
+    .where(eq(documentRevisions.orgId, orgId));
+
+  const byDoc = new Map<string, { revNo: number; status: RevisionStatus }[]>();
+  for (const r of revs) {
+    const list = byDoc.get(r.documentId) ?? [];
+    list.push({ revNo: r.revNo, status: r.status });
+    byDoc.set(r.documentId, list);
+  }
+
+  return docs.map((d) => ({
+    id: d.id,
+    docNo: d.docNo,
+    category: d.category,
+    title: d.title,
+    ownerPersonId: d.ownerPersonId,
+    reviewDueAt: d.reviewDueAt,
+    updatedAt: d.updatedAt,
+    status: computeDocumentStatus(
+      d.category as DocumentCategory,
+      byDoc.get(d.id) ?? [],
+      d.reviewDueAt,
+    ),
+  }));
+}
+
+/**
+ * External-document replace: new file + new review date. The previous version is
+ * retained viewable (obsolete), no approval ceremony. Audit-logged.
+ */
+export async function replaceExternalDocument(
+  ctx: TenantCtx,
+  documentId: string,
+  input: { fileId: string; reviewDueAt?: Date },
+) {
+  return withTenant(getAdminDb(), ctx, async (tx) => {
+    const [doc] = await tx
+      .select()
+      .from(documents)
+      .where(and(eq(documents.orgId, ctx.orgId), eq(documents.id, documentId)))
+      .limit(1);
+    if (!doc) throw new Error("document not found");
+    if (doc.category !== "external") throw new Error("not an external document");
+
+    const maxRows = await tx
+      .select({ maxRev: sql<number>`coalesce(max(${documentRevisions.revNo}), 0)` })
+      .from(documentRevisions)
+      .where(and(eq(documentRevisions.orgId, ctx.orgId), eq(documentRevisions.documentId, documentId)));
+    const next = Number(maxRows[0]?.maxRev ?? 0) + 1;
+
+    const [prev] = await tx
+      .select()
+      .from(documentRevisions)
+      .where(
+        and(
+          eq(documentRevisions.orgId, ctx.orgId),
+          eq(documentRevisions.documentId, documentId),
+          eq(documentRevisions.status, "approved"),
+        ),
+      )
+      .limit(1);
+
+    const [rev] = await tx
+      .insert(documentRevisions)
+      .values({
+        orgId: ctx.orgId,
+        documentId,
+        revNo: next,
+        status: "approved",
+        effectiveAt: new Date(),
+        bodyFileId: input.fileId,
+      })
+      .returning();
+    if (!rev) throw new Error("revision insert failed");
+
+    if (prev) {
+      await tx
+        .update(documentRevisions)
+        .set({ status: "obsolete", supersededByRevisionId: rev.id, supersededAt: new Date() })
+        .where(eq(documentRevisions.id, prev.id));
+    }
+    await tx
+      .update(documents)
+      .set({ currentRevisionId: rev.id, reviewDueAt: input.reviewDueAt, updatedAt: new Date() })
+      .where(eq(documents.id, documentId));
+
+    await audit(tx, ctx, {
+      action: "document.replace_external",
+      entityType: "document",
+      entityId: documentId,
+      after: { revNo: next, fileId: input.fileId, reviewDueAt: input.reviewDueAt },
+      amr: "password",
+    });
+    return rev;
+  });
 }
 
 export async function getDocumentWithRevisions(orgId: string, documentId: string) {
@@ -425,5 +528,15 @@ export async function getDocumentWithRevisions(orgId: string, documentId: string
     .from(documentRevisions)
     .where(and(eq(documentRevisions.orgId, orgId), eq(documentRevisions.documentId, documentId)))
     .orderBy(documentRevisions.revNo);
-  return { document: doc as DocumentRow, revisions };
+  const reqs = await db
+    .select({ requirementRef: documentRequirements.requirementRef })
+    .from(documentRequirements)
+    .where(
+      and(
+        eq(documentRequirements.orgId, orgId),
+        eq(documentRequirements.documentId, documentId),
+        isNull(documentRequirements.removedAt),
+      ),
+    );
+  return { document: doc as DocumentRow, revisions, requirements: reqs.map((r) => r.requirementRef) };
 }
