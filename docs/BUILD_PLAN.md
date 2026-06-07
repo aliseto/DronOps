@@ -140,9 +140,20 @@ rule (≤240 min/day) shows "awaiting M6" until flight records exist. Tables:
 `m6_flight`), `duty_records` (incl. `extra_flight_areas`), `org_currency_rules`. Crew roster (readiness-pill
 dominant, filter/sort, ≤90 d expiry count, recency N/M denominator, no-wallet
 obligation) + person Drawer (Overview/Credentials/Recency/Duty/History) with the
-logged override path. **Next milestone: M5 Fleet.**
+logged override path.
 
-**Then** (per v2 ordering): M5 Fleet · M6 Flight Evidence
+**M5 Fleet (PR-021)** — `aircraft` (registration jurisdiction-bound, airframe
+class, firmware), `aircraft_components` (GCS/payloads/batteries),
+`maintenance_records` (append-only logbook, AC 107-01 schema). Fleet engine
+derives `asset` status (grounded if condition grounded OR registration lapsed →
+in-maintenance → due-soon in the registration renewal window → operational),
+reading REGISTRATION_GATES (GACA Part 48 6-mo window). Fleet roster
+(status-dominant, filter/sort, registration + next-maintenance columns) + asset
+Drawer (Overview/Components/Maintenance/History) with add aircraft / set
+condition / add component / log maintenance. **Next milestone: M6 Flight
+Evidence.**
+
+**Then** (per v2 ordering): M6 Flight Evidence
 (DJI parser — flagged: real logs) · M4 Operations · M2 Compliance (coverage
 matrix + NCR/CAPA closing the deviation→finding loop) · M3 Safety & occurrence
 engine · P0 hardening (notifications, dogfood migration, offline PWA, QA pass).

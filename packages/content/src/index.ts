@@ -3,6 +3,7 @@
 // require data migrations.
 export * from "./jurisdictions";
 export * from "./credential-kinds";
+export * from "./assets";
 export * from "./requirements";
 export * from "./rules";
 export * from "./manual-suite";
