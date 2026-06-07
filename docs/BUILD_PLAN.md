@@ -150,11 +150,22 @@ in-maintenance → due-soon in the registration renewal window → operational),
 reading REGISTRATION_GATES (GACA Part 48 6-mo window). Fleet roster
 (status-dominant, filter/sort, registration + next-maintenance columns) + asset
 Drawer (Overview/Components/Maintenance/History) with add aircraft / set
-condition / add component / log maintenance. **Next milestone: M6 Flight
-Evidence.**
+condition / add component / log maintenance.
 
-**Then** (per v2 ordering): M6 Flight Evidence
-(DJI parser — flagged: real logs) · M4 Operations · M2 Compliance (coverage
+**M6 Flight Evidence (PR-022)** — `packages/parsers` CSV flight-log parser
+(DJI flight-record / Airdata column-mapping) → normalized ParsedFlight (duration,
+block time, max altitude, distance via haversine, min battery, GPS track), tested
+on synthetic fixtures; the encrypted DJI `.DAT` decoder and **parser validation
+against real logs are the one held step**. `flight_records` (FK aircraft + pilot,
+one jurisdiction, draft→reconciled→sealed; sealed immutable via trigger). Flight
+engine `flightDeviations` (ceiling exceedance vs CEILING_DEFAULT_M, low-battery)
+— the "every flight audits itself" inputs. Evidence screen: ingest (CSV) → list →
+flight Drawer (Telemetry / Deviations / History) with reconcile (computes
+deviations) + seal. **Seams kept as-is**: deviation→NCR/CAPA auto-raise lands
+with M2/M3; recency/duty block-time wiring into M7 stays "awaiting M6" until
+real-log validation. **Next milestone: M4 Operations.**
+
+**Then** (per v2 ordering): M4 Operations · M2 Compliance (coverage
 matrix + NCR/CAPA closing the deviation→finding loop) · M3 Safety & occurrence
 engine · P0 hardening (notifications, dogfood migration, offline PWA, QA pass).
 ✅ **30-day clock starts** at the end of hardening.
@@ -178,7 +189,9 @@ G8 end-to-end story test becomes the release gate as modules land.
 
 ## 6. Flag-don't-improvise
 
-1. Real DJI logs before M6 parser. 2. Email provider (notifications).
+1. Real DJI logs — M6 parser BUILT on synthetic fixtures + CSV path (PR-022);
+held: validate the parser + the encrypted .DAT decoder against real logs, then
+flip the M7 recency/duty-block-time seams live. 2. Email provider (notifications).
 3. Prototype data export contents (dogfood migration). 4. OSO#17 numeric duty
 values — LOADED (v1.4, PR-020); block-time rule awaits M6. 5. STS-B1 publication
 (Phase 1). 6. Manual-suite
