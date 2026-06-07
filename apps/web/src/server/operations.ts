@@ -18,6 +18,7 @@ import {
 } from "@dronops/db/schema";
 import {
   OPERATOR_RECENCY_DEFAULT,
+  isRegulator,
   type OperatorRecencyRule,
 } from "@dronops/content";
 import { parseKml } from "@dronops/parsers";
@@ -354,6 +355,11 @@ export interface CreateMissionInput {
 }
 
 export async function createMission(ctx: TenantCtx, input: CreateMissionInput) {
+  // A mission binds one operative regulator layer (Hard Rule 3) — not ISO or any
+  // standard. Enforced server-side, not just in the picker.
+  if (!isRegulator(input.jurisdiction)) {
+    throw new Error(`A mission must bind a regulator jurisdiction, not "${input.jurisdiction}"`);
+  }
   return withTenant(getAdminDb(), ctx, async (tx) => {
     const code = await nextMissionNo(tx, ctx.orgId);
     const [m] = await tx

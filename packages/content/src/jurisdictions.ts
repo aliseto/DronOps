@@ -59,6 +59,20 @@ export const JURISDICTIONS: Record<JurisdictionKey, JurisdictionDef> = {
 export const isJurisdictionKey = (v: string): v is JurisdictionKey =>
   (JURISDICTION_KEYS as readonly string[]).includes(v);
 
+/**
+ * A mission binds exactly ONE operative regulator layer (Hard Rule 3) — never a
+ * `standard` like ISO (management_system, never mission-gated). For a UAE tenant
+ * this yields GCAA-federal + DCAA-Dubai (the per-mission federal-vs-emirate
+ * choice); for a single-regulator tenant it collapses to one. Coverage, by
+ * contrast, spans ALL enabled frameworks (incl. ISO).
+ */
+export const isRegulator = (key: string): boolean =>
+  isJurisdictionKey(key) && JURISDICTIONS[key].kind === "regulator";
+
+/** The mission-bindable regulator layers among the org's enabled frameworks. */
+export const missionBindableJurisdictions = (enabled: readonly string[]): string[] =>
+  enabled.filter(isRegulator);
+
 export interface JurisdictionAdvisory {
   level: "advisory";
   message: string;

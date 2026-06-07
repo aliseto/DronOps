@@ -5,6 +5,8 @@ import {
   jurisdictionsSchema,
   jurisdictionAdvisories,
   isJurisdictionKey,
+  isRegulator,
+  missionBindableJurisdictions,
 } from "./jurisdictions";
 
 describe("jurisdictions content", () => {
@@ -23,5 +25,15 @@ describe("jurisdictions content", () => {
     expect(jurisdictionAdvisories(["UAE-Dubai"])[0]?.level).toBe("advisory");
     expect(jurisdictionAdvisories(["UAE-Dubai", "UAE-Federal"])).toHaveLength(0);
     expect(jurisdictionAdvisories(["KSA"])).toHaveLength(0);
+  });
+
+  it("mission-bindable layers are enabled REGULATORS only (UAE = federal + emirate; never ISO)", () => {
+    expect(isRegulator("UAE-Federal")).toBe(true);
+    expect(isRegulator("UAE-Dubai")).toBe(true);
+    expect(isRegulator("ISO")).toBe(false); // standard, never mission-gated
+    // UAE tenant: both regulators bindable; ISO excluded though enabled for coverage.
+    expect(missionBindableJurisdictions(["UAE-Federal", "UAE-Dubai", "ISO"])).toEqual(["UAE-Federal", "UAE-Dubai"]);
+    // Single-regulator tenant: collapses to one.
+    expect(missionBindableJurisdictions(["KSA", "ISO"])).toEqual(["KSA"]);
   });
 });
