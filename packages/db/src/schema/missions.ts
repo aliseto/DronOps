@@ -12,9 +12,14 @@ import { aircraft } from "./aircraft";
  * authorization* fields + mission_locations + the green-zone / media-attribution
  * conditions.
  *
- * Lifecycle draft → pending_approval → approved → in_progress → reconciling →
- * sealed. Unlike documents, 'approved' stays mutable (it progresses); only
- * 'sealed' is immutable (enforce_mission_seal trigger in the migration).
+ * Lifecycle on the SAME record (DronOps is the system of record, NOT the approval
+ * system — the application is made on the authority portal, external to us):
+ *   planning → submitted_for_approval → approval_in_progress → approved → ready
+ *   → flown, with rejected/withdrawn as off-ramps from approval_in_progress.
+ * Ops team owns planning→submitted; approval admin owns submitted→approved
+ * (records the external application + uploads the returned approval). The crew
+ * currency/duty gate activates only at approved → ready. 'flown' is the immutable
+ * terminal (enforce_mission_seal trigger).
  */
 export const missions = pgTable(
   "missions",
@@ -31,17 +36,30 @@ export const missions = pgTable(
     plannedStartAt: timestamp("planned_start_at", { withTimezone: true }),
     plannedEndAt: timestamp("planned_end_at", { withTimezone: true }),
     ceilingM: numeric("ceiling_m"),
-    // Authorization basis (jurisdiction-shaped; Oman = AWR 033 permit).
+    // External authority application (system-of-record only — never auto-submitted).
+    authority: text("authority"), // DCAA | GCAA | CAA …
+    applicationRef: text("application_ref"), // the authority portal application reference
+    submittedAt: timestamp("submitted_at", { withTimezone: true }), // date submitted to the authority
+    // Authorization basis = the returned approval (jurisdiction-shaped; Oman = AWR 033 permit).
     authorizationType: text("authorization_type"), // new | extension | renewal (Oman); OA | UOC (KSA); …
-    authorizationRef: text("authorization_ref"), // permit / OA number
+    authorizationRef: text("authorization_ref"), // returned permit / OA number
     // Oman standing conditions.
     mediaAttribution: boolean("media_attribution").notNull().default(false),
     greenZoneConfirmedByPersonId: uuid("green_zone_confirmed_by_person_id").references(() => persons.id),
     greenZoneConfirmedAt: timestamp("green_zone_confirmed_at", { withTimezone: true }),
     status: text("status")
-      .$type<"draft" | "pending_approval" | "approved" | "in_progress" | "reconciling" | "sealed">()
+      .$type<
+        | "planning"
+        | "submitted_for_approval"
+        | "approval_in_progress"
+        | "approved"
+        | "ready"
+        | "flown"
+        | "rejected"
+        | "withdrawn"
+      >()
       .notNull()
-      .default("draft"),
+      .default("planning"),
     approvedByPersonId: uuid("approved_by_person_id").references(() => persons.id),
     approvedAt: timestamp("approved_at", { withTimezone: true }),
     signatureId: uuid("signature_id"),
@@ -107,5 +125,32 @@ export const missionCrew = pgTable(
   (t) => [
     uniqueIndex("mission_crew_unique_idx").on(t.orgId, t.missionId, t.personId, t.role),
     ...tenantPolicies("mission_crew"),
+  ],
+).enableRLS();
+
+/**
+ * Mission documents — content-addressed via the files system. INBOUND captured at
+ * planning (AOI KML/KMZ, client-supplied docs, used to apply); OUTBOUND captured
+ * at approved (the authority approval letter / permit, operator + sales-readable).
+ * Append-only references; the underlying file is immutable.
+ */
+export const missionDocuments = pgTable(
+  "mission_documents",
+  {
+    id: primaryId(),
+    orgId: orgId(),
+    missionId: uuid("mission_id")
+      .notNull()
+      .references(() => missions.id),
+    fileId: uuid("file_id").notNull(),
+    flow: text("flow").$type<"inbound" | "outbound">().notNull(),
+    kind: text("kind").notNull(), // aoi | client_doc | approval_letter | permit | other
+    label: text("label"),
+    uploadedByPersonId: uuid("uploaded_by_person_id").references(() => persons.id),
+    ...timestamps(),
+  },
+  (t) => [
+    index("mission_documents_org_mission_idx").on(t.orgId, t.missionId, t.flow),
+    ...tenantPolicies("mission_documents"),
   ],
 ).enableRLS();
