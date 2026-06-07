@@ -23,6 +23,7 @@ import {
   Tabs,
   Textarea,
   ThemeToggle,
+  Timeline,
   Tooltip,
   ToastProvider,
   useToast,
@@ -187,6 +188,24 @@ function Showcase() {
             selected={selected}
             onSelectedChange={setSelected}
             csvFileName="demo"
+          />
+        </div>
+      </Section>
+
+      <Section title="Timeline (audit trail)">
+        <div className="w-full max-w-md">
+          <Timeline
+            events={[
+              { id: "1", action: "organization.create", actor: "ali@…", at: "2026-06-07 09:14Z" },
+              {
+                id: "2",
+                action: "org_jurisdiction.enable",
+                actor: "ali@…",
+                at: "2026-06-07 09:15Z",
+                summary: "KSA",
+              },
+              { id: "3", action: "membership.invite", actor: "ali@…", at: "2026-06-07 09:16Z" },
+            ]}
           />
         </div>
       </Section>

@@ -27,9 +27,12 @@ export { Combobox, type ComboItem } from "./components/Combobox";
 export { DateField, type DateFieldProps } from "./components/DateField";
 export { ToastProvider, useToast, type Toast, type ToastTone } from "./components/Toast";
 
+export { Timeline, type TimelineEvent } from "./components/Timeline";
+
 // Overlays
 export { Drawer } from "./overlays/Drawer";
 export { Modal } from "./overlays/Modal";
+export { HistoryDrawer } from "./overlays/HistoryDrawer";
 
 // Data
 export { DataTable, type Column, type DataTableProps } from "./data/DataTable";
