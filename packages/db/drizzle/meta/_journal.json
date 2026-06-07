@@ -71,6 +71,13 @@
       "when": 1780830242407,
       "tag": "0009_elite_hannibal_king",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1780839944772,
+      "tag": "0010_lying_infant_terrible",
+      "breakpoints": true
     }
   ]
 }
