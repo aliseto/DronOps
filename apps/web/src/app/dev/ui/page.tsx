@@ -27,6 +27,8 @@ import {
   Tooltip,
   ToastProvider,
   useToast,
+  FileDrop,
+  SignatureCeremony,
   type Column,
 } from "@dronops/ui";
 
@@ -68,6 +70,7 @@ function Showcase() {
   const [tab, setTab] = useState("a");
   const [drawer, setDrawer] = useState(false);
   const [modal, setModal] = useState(false);
+  const [sign, setSign] = useState(false);
   const [combo, setCombo] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -192,6 +195,18 @@ function Showcase() {
         </div>
       </Section>
 
+      <Section title="Files & signatures">
+        <div className="w-full max-w-md">
+          <FileDrop
+            onUpload={async (file, sha256) => {
+              await new Promise((r) => setTimeout(r, 300));
+              return { sha256, deduped: false };
+            }}
+          />
+        </div>
+        <Button onClick={() => setSign(true)}>Sign ceremony</Button>
+      </Section>
+
       <Section title="Timeline (audit trail)">
         <div className="w-full max-w-md">
           <Timeline
@@ -234,6 +249,20 @@ function Showcase() {
       >
         <p className="text-small text-fg-secondary">This makes revision 2 non-current.</p>
       </Modal>
+      <SignatureCeremony
+        open={sign}
+        onClose={() => setSign(false)}
+        meaning="I approve revision 3 of the Operations Manual as effective."
+        onSign={async (proof) => {
+          await new Promise((r) => setTimeout(r, 400));
+          return {
+            signerName: "A. Pilot",
+            signedAtUtc: new Date().toISOString(),
+            payloadHash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            method: proof.method,
+          };
+        }}
+      />
     </div>
   );
 }

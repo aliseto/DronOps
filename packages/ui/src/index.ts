@@ -28,6 +28,13 @@ export { DateField, type DateFieldProps } from "./components/DateField";
 export { ToastProvider, useToast, type Toast, type ToastTone } from "./components/Toast";
 
 export { Timeline, type TimelineEvent } from "./components/Timeline";
+export { FileDrop, type UploadResult } from "./components/FileDrop";
+export { SignatureBlock } from "./components/SignatureBlock";
+export {
+  SignatureCeremony,
+  type SignatureResult,
+  type SignProof,
+} from "./components/SignatureCeremony";
 
 // Overlays
 export { Drawer } from "./overlays/Drawer";

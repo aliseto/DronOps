@@ -36,6 +36,13 @@
       "when": 1780824980985,
       "tag": "0004_powerful_rage",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1780825373982,
+      "tag": "0005_redundant_cloak",
+      "breakpoints": true
     }
   ]
 }

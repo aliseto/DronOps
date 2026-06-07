@@ -1,7 +1,7 @@
-import { randomUUID } from "node:crypto";
-
-/** UUID v4, used for primary keys generated app-side when needed. */
-export const newId = (): string => randomUUID();
+/** UUID v4, used for primary keys generated app-side when needed.
+ * Uses the global Web Crypto (Node 20+ and browsers) so the module stays
+ * client-bundle-safe. */
+export const newId = (): string => crypto.randomUUID();
 
 /**
  * Human-facing reference numbers (e.g. NCR-2026-019). The numeric counter is

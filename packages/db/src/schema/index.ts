@@ -8,3 +8,5 @@ export * from "./memberships";
 export * from "./org-jurisdictions";
 export * from "./persons";
 export * from "./person-roles";
+export * from "./files";
+export * from "./signatures";

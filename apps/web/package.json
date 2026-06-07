@@ -17,6 +17,7 @@
     "@dronops/ui": "workspace:*",
     "@simplewebauthn/browser": "catalog:",
     "@simplewebauthn/server": "catalog:",
+    "@supabase/supabase-js": "^2.47.0",
     "bcryptjs": "^2.4.3",
     "drizzle-orm": "catalog:",
     "next": "catalog:",
