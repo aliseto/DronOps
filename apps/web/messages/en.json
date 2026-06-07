@@ -1,0 +1,22 @@
+{
+  "app": {
+    "name": "DronOps",
+    "tagline": "Every flight audits itself."
+  },
+  "home": {
+    "title": "DronOps",
+    "subtitle": "UAV operations and QMS compliance for licensed drone operators.",
+    "foundation": "Phase 0 foundation"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "documents": "Documents",
+    "compliance": "Compliance",
+    "safety": "Safety & risk",
+    "operations": "Operations",
+    "fleet": "Fleet",
+    "evidence": "Flight evidence",
+    "personnel": "Personnel & crew",
+    "settings": "Settings"
+  }
+}
