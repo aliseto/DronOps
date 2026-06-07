@@ -13,6 +13,7 @@
   "dependencies": {
     "@dronops/content": "workspace:*",
     "@dronops/db": "workspace:*",
+    "@dronops/parsers": "workspace:*",
     "@dronops/shared": "workspace:*",
     "@dronops/ui": "workspace:*",
     "@simplewebauthn/browser": "catalog:",
