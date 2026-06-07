@@ -1,7 +1,7 @@
 # BUILD_PLAN.md v2 — DronOps production (Claude Code)
 
 Supersedes v1. Incorporates: the DronOps rename, M7 Personnel & Crew, the
-extracted GCC regulatory content (52 requirements, 5 frameworks), DRO-REG-001
+extracted GCC regulatory content (54 requirements, 5 frameworks), DRO-REG-001
 jurisdiction-mode architecture, and everything the Lovable prototype validated.
 Target unchanged: **P0 exit = Aironov runs 100% of its own operations here for
 30 consecutive days, zero parallel spreadsheets.** Multi-tenant SaaS posture

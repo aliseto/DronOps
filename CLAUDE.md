@@ -21,7 +21,7 @@ M5 Fleet · M6 Flight Evidence · M7 Personnel & Crew.
 - `docs/DRO-REG-001.md` — regulatory comparison & implementation matrix;
   jurisdiction modes, deadline values (3h/72h/10d), retention (build-to-
   strictest: 36 months), flight-record union schema, gate rules.
-- `docs/dronops_requirements_seed.sql` — (pending upload) 52 clause-anchored
+- `docs/dronops_requirements_seed.sql` — 54 clause-anchored
   requirement objects; convert to `packages/content` data, never hand-edit, and
   never execute against the DB.
 
