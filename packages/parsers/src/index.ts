@@ -6,3 +6,6 @@ export {
   type ParsedFlight,
   type TrackPoint,
 } from "./flight-log";
+
+// KML AOI → permitted-location rows (M4). KMZ (zip) deferred.
+export { parseKml, type KmlLocation, type ParsedKml } from "./kml";

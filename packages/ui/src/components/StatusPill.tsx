@@ -18,6 +18,15 @@ export interface StatusVocab {
   coverage: "covered" | "partial" | "gap" | "n-a";
   external: "valid" | "review-due" | "expired";
   readiness: "fit" | "caution" | "not-fit" | "unknown";
+  lifecycle:
+    | "planning"
+    | "submitted_for_approval"
+    | "approval_in_progress"
+    | "approved"
+    | "ready"
+    | "flown"
+    | "rejected"
+    | "withdrawn";
 }
 
 export type StatusDomain = keyof StatusVocab;
@@ -75,6 +84,16 @@ const REGISTRY: { [D in StatusDomain]: { [S in StatusVocab[D]]: Entry } } = {
     caution: { tone: "warn", label: "Caution" },
     "not-fit": { tone: "danger", label: "Not fit" },
     unknown: { tone: "neutral", label: "Unknown" },
+  },
+  lifecycle: {
+    planning: { tone: "neutral", label: "Planning" },
+    submitted_for_approval: { tone: "info", label: "Submitted" },
+    approval_in_progress: { tone: "warn", label: "Approval in progress" },
+    approved: { tone: "ok", label: "Approved" },
+    ready: { tone: "ok", label: "Ready" },
+    flown: { tone: "neutral", label: "Flown", lock: true },
+    rejected: { tone: "danger", label: "Rejected" },
+    withdrawn: { tone: "neutral", label: "Withdrawn" },
   },
 };
 

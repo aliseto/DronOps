@@ -119,6 +119,9 @@ function Showcase() {
         <StatusPill domain="coverage" status="partial" />
         <StatusPill domain="readiness" status="fit" />
         <StatusPill domain="readiness" status="not-fit" />
+        <StatusPill domain="lifecycle" status="approval_in_progress" />
+        <StatusPill domain="lifecycle" status="approved" />
+        <StatusPill domain="lifecycle" status="flown" />
         <Badge tone="accent">accent</Badge>
         <Badge tone="external">external</Badge>
       </Section>
