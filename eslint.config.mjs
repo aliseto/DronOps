@@ -24,6 +24,7 @@ export default tseslint.config(
       "**/playwright-report/**",
       "**/test-results/**",
       "**/drizzle/**",
+      "**/next-env.d.ts",
     ],
   },
   js.configs.recommended,

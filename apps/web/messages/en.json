@@ -18,5 +18,48 @@
     "evidence": "Flight evidence",
     "personnel": "Personnel & crew",
     "settings": "Settings"
+  },
+  "pages": {
+    "dashboard": {
+      "title": "Dashboard",
+      "description": "What needs you today.",
+      "exceptions": "Exceptions",
+      "nothing": "Nothing needs your attention."
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Organization, jurisdictions and security.",
+      "jurisdictionsNote": "Jurisdiction enablement and onboarding land in PR-006."
+    }
+  },
+  "modules": {
+    "documents": {
+      "description": "Manual suite, controlled documents and acknowledgements.",
+      "milestone": "milestone M1 (Documents)"
+    },
+    "compliance": {
+      "description": "Coverage matrix, findings, CAPA and audit packs.",
+      "milestone": "milestone M2 (Compliance)"
+    },
+    "safety": {
+      "description": "Occurrences, deadline clocks, hazards and risk assessments.",
+      "milestone": "milestone M3 (Safety & risk)"
+    },
+    "operations": {
+      "description": "Missions, gates, approvals, calendar and preflight.",
+      "milestone": "milestone M4 (Operations)"
+    },
+    "fleet": {
+      "description": "Aircraft, registrations, maintenance and firmware.",
+      "milestone": "milestone M5 (Fleet)"
+    },
+    "evidence": {
+      "description": "Flight logs, telemetry traces and deviation engine.",
+      "milestone": "milestone M6 (Flight evidence)"
+    },
+    "personnel": {
+      "description": "Credential wallet, currency engine and crew records.",
+      "milestone": "milestone M7 (Personnel & crew)"
+    }
   }
 }
