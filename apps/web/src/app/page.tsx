@@ -1,18 +1,20 @@
 import { useTranslations } from "next-intl";
+import { ThemeToggle } from "@dronops/ui";
 
 export default function HomePage() {
   const t = useTranslations("home");
   return (
-    <main style={{ padding: "3rem", maxWidth: "48rem", margin: "0 auto" }}>
-      <h1 style={{ fontSize: "1.75rem", fontWeight: 650 }}>{t("title")}</h1>
-      <p style={{ color: "#8d9399" }}>{t("subtitle")}</p>
+    <main className="mx-auto max-w-2xl p-12">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-title font-semibold text-fg-primary">{t("title")}</h1>
+          <p className="mt-1 text-body text-fg-muted">{t("subtitle")}</p>
+        </div>
+        <ThemeToggle className="rounded-md border border-default bg-surface px-3 py-1.5 text-small text-fg-secondary hover:bg-hover" />
+      </div>
       <p
         data-testid="foundation-badge"
-        style={{
-          marginTop: "1.5rem",
-          fontFamily: "'JetBrains Mono', monospace",
-          fontSize: "0.8125rem",
-        }}
+        className="mt-6 inline-block rounded-pill border border-subtle bg-inset px-3 py-1 font-mono text-mono text-status-ok-fg"
       >
         {t("foundation")}
       </p>

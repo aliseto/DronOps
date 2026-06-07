@@ -6,8 +6,16 @@ test("home page renders the foundation badge", async ({ page }) => {
   await expect(page.getByTestId("foundation-badge")).toBeVisible();
 });
 
-test("root element defaults to the dark theme", async ({ page }) => {
+test("defaults to dark theme and toggles to light", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  const html = page.locator("html");
+  await expect(html).toHaveAttribute("data-theme", "dark");
+  await expect(html).toHaveAttribute("lang", "en");
+
+  await page.screenshot({ path: "test-results/home-dark.png", fullPage: true });
+
+  await page.getByRole("button", { name: /switch to light theme/i }).click();
+  await expect(html).toHaveAttribute("data-theme", "light");
+
+  await page.screenshot({ path: "test-results/home-light.png", fullPage: true });
 });

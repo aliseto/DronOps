@@ -1,14 +1,13 @@
-/* Tailwind v4 + design tokens are wired in PR-002. Minimal base for now. */
-* {
-  box-sizing: border-box;
-}
-html,
-body {
-  margin: 0;
-  padding: 0;
-  font-family:
-    "Inter",
-    system-ui,
-    -apple-system,
-    sans-serif;
-}
+@import "tailwindcss";
+
+/* Design tokens + base component styles from the UI package. */
+@import "@dronops/ui/tokens.css";
+@import "@dronops/ui/styles.css";
+
+/* Monorepo: Tailwind must scan the UI package too, or utilities used only
+ * inside @dronops/ui get tree-shaken away. */
+@source "../../../../packages/ui/src/**/*.{ts,tsx}";
+
+/* Theme switching is attribute-based (data-theme on <html>), not class-based. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@custom-variant print (&:where([data-theme="print"], [data-theme="print"] *));
