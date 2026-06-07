@@ -148,4 +148,43 @@ describe("fitToFly", () => {
     expect(v.checks).toEqual([]);
     expect(v.verdict).toBe("unknown");
   });
+
+  it("Unknown blocks assignment just like Not-fit (reason differs)", () => {
+    const unknown = fitToFly("Oman", "multirotor", { credentials: [], recencyEvents: recent3 }, NOW);
+    expect(unknown.verdict).toBe("unknown");
+    expect(unknown.blocksAssignment).toBe(true); // missing creds — can't confirm, still blocks
+    expect(unknown.checks.find((c) => c.key === "credential:medical")?.reasonKind).toBe("missing");
+
+    const notFit = fitToFly(
+      "Oman",
+      "multirotor",
+      {
+        credentials: [
+          { kind: "oman_rp_certification", verified: true, expiresAt: daysAhead(200) },
+          { kind: "medical", verified: true, expiresAt: daysAgo(1) },
+        ],
+        recencyEvents: recent3,
+      },
+      NOW,
+    );
+    expect(notFit.verdict).toBe("not-fit");
+    expect(notFit.blocksAssignment).toBe(true);
+    expect(notFit.checks.find((c) => c.key === "credential:medical")?.reasonKind).toBe("expired");
+  });
+
+  it("Fit and Caution do not block assignment", () => {
+    const fit = fitToFly(
+      "Oman",
+      "multirotor",
+      {
+        credentials: [
+          { kind: "oman_rp_certification", verified: true, expiresAt: daysAhead(200) },
+          { kind: "medical", verified: true, expiresAt: daysAhead(200) },
+        ],
+        recencyEvents: recent3,
+      },
+      NOW,
+    );
+    expect(fit.blocksAssignment).toBe(false);
+  });
 });

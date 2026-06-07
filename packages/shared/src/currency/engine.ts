@@ -155,12 +155,16 @@ export function knowledgeRecencyCurrency(
 }
 
 // ─────────────────────────────────────────────────────────── fit-to-fly
+/** Why a check is not current — drives the action shown (obtain vs renew). */
+export type ReasonKind = "missing" | "unverified" | "expired" | "expiring" | "stale";
+
 export interface ReadinessCheck {
   key: string;
   label: string;
   status: CurrencyStatus;
   clause?: string;
   detail?: string;
+  reasonKind?: ReasonKind;
 }
 
 export type Verdict = "fit" | "caution" | "not-fit" | "unknown";
@@ -169,6 +173,13 @@ export interface ReadinessVerdict {
   jurisdiction: Jurisdiction;
   airframeClass: string;
   verdict: Verdict;
+  /**
+   * Whether this verdict blocks mission assignment. BOTH "not-fit" and "unknown"
+   * block flight — the difference is only the reason (expired → renew; missing →
+   * obtain/verify). "unknown" must never read as a soft pass. Overridable only
+   * via the logged override path, never silently.
+   */
+  blocksAssignment: boolean;
   checks: ReadinessCheck[];
   /** Human-readable reasons the person is not "fit" (blocking + caution). */
   reasons: string[];
@@ -222,15 +233,31 @@ export function fitToFly(
       const clause = kind?.clause ?? MEDICAL_GATES[jurisdiction]?.clause;
       const held1 = held.get(kindCode);
       if (!held1) {
-        checks.push({ key: `credential:${kindCode}`, label, status: "unverified", clause, detail: "Not on file" });
+        checks.push({
+          key: `credential:${kindCode}`,
+          label,
+          status: "unverified",
+          clause,
+          detail: "Not on file",
+          reasonKind: "missing",
+        });
         continue;
       }
       const cur = credentialCurrency(held1, now);
+      const reasonKind: ReasonKind | undefined =
+        cur.status === "lapsed"
+          ? "expired"
+          : cur.status === "expiring"
+            ? "expiring"
+            : cur.status === "unverified"
+              ? "unverified"
+              : undefined;
       checks.push({
         key: `credential:${kindCode}`,
         label,
         status: cur.status,
         clause,
+        reasonKind,
         detail:
           cur.daysUntilExpiry == null
             ? undefined
@@ -248,6 +275,7 @@ export function fitToFly(
           label: `Operator recency (${rule.minFlights}/${rule.windowDays} d)`,
           status: cur.status,
           clause: cur.clause,
+          reasonKind: cur.status === "lapsed" ? "stale" : cur.status === "expiring" ? "expiring" : undefined,
           detail: `${cur.count ?? 0}/${rule.minFlights} flights in ${rule.windowDays} d`,
         });
       } else {
@@ -259,6 +287,7 @@ export function fitToFly(
             label: "Knowledge recency",
             status: cur.status,
             clause: cur.clause,
+            reasonKind: cur.status === "lapsed" ? "stale" : cur.status === "expiring" ? "expiring" : undefined,
             detail: cur.lapsesAt ? `valid to ${cur.lapsesAt.toISOString().slice(0, 10)}` : "no record",
           });
         }
@@ -270,5 +299,12 @@ export function fitToFly(
   const reasons = checks
     .filter((c) => c.status !== "current")
     .map((c) => `${c.label}: ${c.status}${c.clause ? ` (${c.clause})` : ""}`);
-  return { jurisdiction, airframeClass, verdict, checks, reasons };
+  return {
+    jurisdiction,
+    airframeClass,
+    verdict,
+    blocksAssignment: verdict === "not-fit" || verdict === "unknown",
+    checks,
+    reasons,
+  };
 }

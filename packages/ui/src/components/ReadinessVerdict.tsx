@@ -18,16 +18,31 @@ export interface ReadinessCheckView {
 export interface ReadinessVerdictProps {
   verdict: StatusVocab["readiness"];
   checks: ReadinessCheckView[];
+  /** When true, render a "Blocks assignment" tag so 'unknown' never reads as a pass. */
+  blocksAssignment?: boolean;
   /** Optional context line, e.g. "Multirotor · Oman". */
   context?: string;
   className?: string;
 }
 
-export function ReadinessVerdict({ verdict, checks, context, className }: ReadinessVerdictProps) {
+export function ReadinessVerdict({
+  verdict,
+  checks,
+  blocksAssignment,
+  context,
+  className,
+}: ReadinessVerdictProps) {
   return (
     <div className={cn("flex flex-col gap-3", className)}>
       <div className="flex items-center justify-between gap-2">
-        <StatusPill domain="readiness" status={verdict} />
+        <span className="flex items-center gap-2">
+          <StatusPill domain="readiness" status={verdict} />
+          {blocksAssignment && (
+            <span className="inline-flex items-center gap-1 rounded-pill border border-status-danger-fg/40 px-2 py-0.5 text-micro font-medium text-status-danger-fg">
+              Blocks assignment
+            </span>
+          )}
+        </span>
         {context && <span className="text-micro text-fg-muted">{context}</span>}
       </div>
       {checks.length === 0 ? (

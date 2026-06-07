@@ -2,12 +2,18 @@ import { DUTY_SCHEMES, type DutySchemeRule } from "@dronops/content";
 import type { Jurisdiction } from "../jurisdiction/engine";
 
 /**
- * Duty / rest engine (DUOSAM OSO#17, UAE-Dubai). Pure functions over duty records
- * + a content scheme. The scheme's numeric values are an OPEN ITEM pending the
- * owner (DRO-REG-001 §16.2) — a configured scheme whose values are still pending
- * returns status "not-configured" rather than silently passing, so we never
- * assert compliance against limits we don't have. The breach logic itself is
- * fully implemented and tested against schemes with concrete values.
+ * Duty / rest engine (DUOSAM OSO#17). Pure functions over duty records + a
+ * content scheme. OSO#17 duty/rest is NOT all of UAE-Dubai — it binds to
+ * SPECIFIC-CATEGORY (higher-risk) operations, the same way jurisdiction binds to
+ * a record elsewhere. Applicability is therefore an explicit input, never
+ * inferred from the jurisdiction alone:
+ *
+ *   - not-applicable : the person isn't covered (e.g. open-category-only Dubai).
+ *                      A truthful "doesn't apply" — never amber, never a breach.
+ *   - not-configured : applicable, but OSO#17 numeric values are still pending
+ *                      (DRO-REG-001 §16.2) — applicable-but-unset, not doesn't-
+ *                      apply. Reported rather than a silent false pass.
+ *   - no-scheme      : no duty scheme in the enabled jurisdictions.
  *
  * Breaches feed the deviation→finding loop (M3) at projection/roster time; this
  * engine only computes them.
@@ -33,7 +39,12 @@ export interface DutyBreach {
   detail: string;
 }
 
-export type DutyProjectionStatus = "ok" | "breach" | "not-configured" | "no-scheme";
+export type DutyProjectionStatus =
+  | "ok"
+  | "breach"
+  | "not-configured"
+  | "not-applicable"
+  | "no-scheme";
 
 export interface DutyProjection {
   status: DutyProjectionStatus;
@@ -50,13 +61,21 @@ const sameUtcDay = (a: Date, b: Date) =>
 /**
  * Project duty/rest breaches for one person's records under a scheme. Records
  * may be historical or planned (rostering warnings come from projecting planned
- * duty). Returns "not-configured" when the scheme exists but its values are still
- * pending transcription from source.
+ * duty).
+ *
+ * `opts.applicable` gates coverage: OSO#17 applies only to specific-category
+ * operations, so a person the rule doesn't cover returns "not-applicable" (never
+ * amber). Pass `applicable: false` for open-category-only pilots. Default true so
+ * the breach logic stays directly testable.
  */
 export function dutyProjection(
   records: readonly DutyRecord[],
   scheme: DutySchemeRule | undefined,
+  opts: { applicable?: boolean } = {},
 ): DutyProjection {
+  if (opts.applicable === false) {
+    return { status: "not-applicable", breaches: [], clause: scheme?.clause };
+  }
   if (!scheme) return { status: "no-scheme", breaches: [] };
   if (
     scheme.valuesPending ||

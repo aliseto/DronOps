@@ -18,6 +18,20 @@ describe("dutyProjection", () => {
     expect(dutyProjection([], undefined).status).toBe("no-scheme");
   });
 
+  it("returns not-applicable for a pilot the rule doesn't cover (never amber)", () => {
+    const real = dutySchemeFor("UAE-Dubai");
+    // Even with a configured scheme + duty records, open-category pilots are out of scope.
+    const r = dutyProjection(
+      [{ startAt: at("2026-06-01T06:00:00Z"), endAt: at("2026-06-01T18:30:00Z") }],
+      scheme,
+      { applicable: false },
+    );
+    expect(r.status).toBe("not-applicable");
+    expect(r.breaches).toEqual([]);
+    // not-applicable is distinct from not-configured (applicable-but-unset).
+    expect(dutyProjection([], real, { applicable: true }).status).toBe("not-configured");
+  });
+
   it("returns not-configured for the real UAE-Dubai scheme (OSO#17 values pending)", () => {
     const real = dutySchemeFor("UAE-Dubai");
     expect(real?.valuesPending).toBe(true);
