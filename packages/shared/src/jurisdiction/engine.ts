@@ -18,7 +18,7 @@ import {
  * value is embedded here; everything comes from @dronops/content (BUILD_PLAN §1).
  */
 
-export type Jurisdiction = "UAE-Federal" | "UAE-Dubai" | "KSA" | "ISO";
+export type Jurisdiction = "UAE-Federal" | "UAE-Dubai" | "KSA" | "Oman" | "ISO";
 
 const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;

@@ -16,11 +16,19 @@ describe("deadlineFor (DRO-REG-001 §6)", () => {
     ["UAE-Federal", 3 * HOUR, "UAC.035"],
     ["UAE-Dubai", 72 * HOUR, "DUOSAM OM"],
     ["KSA", 10 * DAY, "§107.9"],
+    ["Oman", 0, "CAR-102 Subpart G"],
   ] as const)("%s deadline", (jurisdiction, deltaMs, clause) => {
     const res = deadlineFor({ occurredAt }, jurisdiction);
     expect(res).not.toBeNull();
     expect(res!.dueAt.getTime() - occurredAt.getTime()).toBe(deltaMs);
     expect(res!.rule.clause).toBe(clause);
+  });
+
+  it("Oman is immediate with 24h contacts + a 3-day listed-incident tier", () => {
+    const res = deadlineFor({ occurredAt }, "Oman");
+    expect(res!.rule.immediate).toBe(true);
+    expect(res!.rule.contacts).toContain("24-hour");
+    expect(res!.rule.listed).toMatchObject({ value: 3, unit: "calendar-days" });
   });
 
   it("ISO has no occurrence deadline", () => {

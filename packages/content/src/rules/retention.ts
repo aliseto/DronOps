@@ -24,3 +24,10 @@ export const RETENTION = {
 } as const;
 
 schema.parse(RETENTION);
+
+/** Per-jurisdiction retention clause for display (the value is the global 36-month
+ * rule; only the cited clause differs). DRO-REG-001 v2.0 §14. */
+export const RETENTION_CLAUSE_BY_JURISDICTION: Record<string, string> = {
+  Oman: "CAR 102.025(12)",
+};
+

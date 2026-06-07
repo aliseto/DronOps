@@ -32,6 +32,13 @@ parallel spreadsheets.** Multi-tenant SaaS posture from PR-001.
   (NCR closure verifier ≠ raiser; release-to-service = technician). External
   documents have their own status model (valid / review-due / expired by review
   date) and never enter the approval lifecycle.
+- **Oman (CAA) is in the jurisdiction set** (PR-016) — content frameworks
+  CAR-102 / CAR-47 (regulation) + AWR 033 (guidance), 72 requirements total;
+  occurrence deadlines immediate + 3-day, 122 m ceiling default, retention clause
+  CAR 102.025(12). **M4 flag: Oman approval-basis = AWR 033 permit structure
+  (type new/extension/renewal, permit no., per-location rows, window) + required
+  green-zone confirmation (who/when) + standing media-attribution condition** —
+  build with the M4 mission PRs. DRO-REG-001 v2.0 is the in-repo reference.
 
 ## 1. Phase 0 — canonical PR sequence (as built)
 

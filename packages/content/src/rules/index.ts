@@ -6,3 +6,4 @@ export * from "./retention";
 export * from "./capa";
 export * from "./completeness";
 export * from "./gates";
+export * from "./ceilings";
