@@ -6,7 +6,7 @@ import { z } from "zod";
  * binds exactly one. Deadlines/retention/gates are derived from content rules
  * (PR-010.5), never hardcoded in app code.
  */
-export const JURISDICTION_KEYS = ["UAE-Federal", "UAE-Dubai", "KSA", "ISO"] as const;
+export const JURISDICTION_KEYS = ["UAE-Federal", "UAE-Dubai", "KSA", "Oman", "ISO"] as const;
 export type JurisdictionKey = (typeof JURISDICTION_KEYS)[number];
 
 export interface JurisdictionDef {
@@ -38,6 +38,14 @@ export const JURISDICTIONS: Record<JurisdictionKey, JurisdictionDef> = {
     authority: "GACA · GACAR 107/48 · AC 107-01",
     kind: "regulator",
     summary: "KSA operations: 10-day clock, §107.71 recency gate, Part 48 registration expiry.",
+  },
+  Oman: {
+    key: "Oman",
+    label: "Oman",
+    authority: "CAA · CAR-102 / CAR-47 · AWR 033",
+    kind: "regulator",
+    summary:
+      "Oman operations: green-zone approval (Serb platform), immediate + 3-day occurrence reporting, 122 m ceiling, AWR 033 permit.",
   },
   ISO: {
     key: "ISO",

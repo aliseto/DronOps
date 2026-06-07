@@ -10,6 +10,7 @@ export { IconButton, type IconButtonProps } from "./components/IconButton";
 export { Input, Textarea, type InputProps, type TextareaProps } from "./components/Input";
 export { Card, type CardProps } from "./components/Card";
 export { Badge, type BadgeTone } from "./components/Badge";
+export { JurisdictionBadge } from "./components/JurisdictionBadge";
 export {
   StatusPill,
   type StatusDomain,

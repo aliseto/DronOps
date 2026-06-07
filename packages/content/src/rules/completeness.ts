@@ -30,7 +30,7 @@ export type FlightField = (typeof FLIGHT_FIELDS)[number];
 const schema = z.array(z.enum(FLIGHT_FIELDS));
 
 // ● = explicitly required in that regime (DRO-REG-001 §5).
-export const FLIGHT_COMPLETENESS: Record<Jurisdiction, FlightField[]> = {
+export const FLIGHT_COMPLETENESS: Partial<Record<Jurisdiction, FlightField[]>> = {
   "UAE-Federal": [
     "dateOfFlight",
     "startEndTime",

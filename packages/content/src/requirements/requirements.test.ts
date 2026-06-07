@@ -3,11 +3,18 @@ import { REQUIREMENTS, getRequirement } from "./index";
 import { RECORD_TYPES } from "./types";
 
 describe("requirement content", () => {
-  // The uploaded seed v1.0 (2026-06-07) contains 54 clause-anchored requirements
-  // (the earlier "52" note predates this seed). Assert the real seed count.
+  // Seed v1.0 (54) + Oman addendum v1.1 (18) = 72 clause-anchored requirements.
   it("loads every requirement with unique ids", () => {
-    expect(REQUIREMENTS).toHaveLength(54);
-    expect(new Set(REQUIREMENTS.map((r) => r.id)).size).toBe(54);
+    expect(REQUIREMENTS).toHaveLength(72);
+    expect(new Set(REQUIREMENTS.map((r) => r.id)).size).toBe(72);
+  });
+
+  it("includes the Oman addendum with correct derivation", () => {
+    const oman = REQUIREMENTS.filter((r) => r.jurisdiction === "Oman");
+    expect(oman).toHaveLength(18);
+    expect(getRequirement("CAR102:025-12")?.kind).toBe("regulation");
+    expect(getRequirement("AWR033:PERMIT")?.kind).toBe("guidance");
+    expect(getRequirement("CAR47:MARKS")?.jurisdiction).toBe("Oman");
   });
 
   it("uses only the record-type vocabulary", () => {
@@ -18,9 +25,9 @@ describe("requirement content", () => {
   });
 
   it("derives kind and jurisdiction per the seed rules", () => {
+    const guidanceFrameworks = new Set(["GACA AC 107-01", "CAA AWR 033"]);
     for (const r of REQUIREMENTS) {
-      if (r.framework === "GACA AC 107-01") expect(r.kind).toBe("guidance");
-      else expect(r.kind).toBe("regulation");
+      expect(r.kind).toBe(guidanceFrameworks.has(r.framework) ? "guidance" : "regulation");
     }
     expect(getRequirement("CARUAC:015h")?.jurisdiction).toBe("UAE-Federal");
     expect(getRequirement("DCAR:OM-OCC72")?.jurisdiction).toBe("UAE-Dubai");

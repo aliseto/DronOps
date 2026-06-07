@@ -7,10 +7,13 @@ import { dirname, join } from "node:path";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, "..", "..", "..");
-const seedPath = join(repoRoot, "docs", "dronops_requirements_seed.sql");
+const seedPaths = [
+  join(repoRoot, "docs", "dronops_requirements_seed.sql"),
+  join(repoRoot, "docs", "dronops_requirements_seed_oman_v1.1.sql"), // Oman addendum
+];
 const outDir = join(here, "..", "src", "requirements");
 
-const SEED_VERSION = "v1.0 (2026-06-07)";
+const SEED_VERSION = "v1.0 + Oman v1.1 (2026-06-07)";
 
 // framework -> { file, jurisdiction, kind }  (derivation rules per owner spec)
 const FRAMEWORKS = {
@@ -19,10 +22,18 @@ const FRAMEWORKS = {
   "GACAR Part 107": { file: "gacar107", jurisdiction: "KSA", kind: "regulation" },
   "GACAR Part 48": { file: "gacar48", jurisdiction: "KSA", kind: "regulation" },
   "GACA AC 107-01": { file: "ac10701", jurisdiction: "KSA", kind: "guidance" },
+  // Oman addendum v1.1
+  "CAR-102": { file: "car102", jurisdiction: "Oman", kind: "regulation" },
+  "CAR-47": { file: "car47", jurisdiction: "Oman", kind: "regulation" },
+  "CAA AWR 033": { file: "awr033", jurisdiction: "Oman", kind: "guidance" },
 };
 
-const sql = readFileSync(seedPath, "utf8");
-const body = sql.slice(sql.toLowerCase().indexOf("values") + "values".length);
+const body = seedPaths
+  .map((p) => {
+    const sql = readFileSync(p, "utf8");
+    return sql.slice(sql.toLowerCase().indexOf("values") + "values".length);
+  })
+  .join("\n");
 
 // Extract top-level (...) tuples, respecting '' escaping inside string literals.
 function parseTuples(str) {
