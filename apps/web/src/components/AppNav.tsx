@@ -3,8 +3,9 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { useTranslations } from "next-intl";
-import { AppShell, ThemeToggle, type LinkComponent, type NavItem } from "@dronops/ui";
+import { AppShell, Button, ThemeToggle, type LinkComponent, type NavItem } from "@dronops/ui";
 import { FOOTER_NAV, PRIMARY_NAV, type NavConfigItem } from "./nav-config";
 
 const LinkAdapter: LinkComponent = ({ href, className, children, ...rest }) => (
@@ -33,7 +34,12 @@ export function AppNav({ children }: { children: ReactNode }) {
       topbar={
         <>
           <span className="text-small text-fg-muted">Aironov</span>
-          <ThemeToggle className="ms-auto rounded-md border border-default bg-surface px-3 py-1.5 text-small text-fg-secondary hover:bg-hover" />
+          <div className="ms-auto flex items-center gap-2">
+            <ThemeToggle className="rounded-md border border-default bg-surface px-3 py-1.5 text-small text-fg-secondary hover:bg-hover" />
+            <Button variant="ghost" size="sm" onClick={() => void signOut({ redirectTo: "/signin" })}>
+              Sign out
+            </Button>
+          </div>
         </>
       }
     >

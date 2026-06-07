@@ -2,3 +2,4 @@
 // isolation tests via tenantIsolationSuite.
 export * from "./roles";
 export * from "./audit-events";
+export * from "./auth";

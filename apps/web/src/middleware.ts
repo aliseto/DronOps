@@ -1,13 +1,12 @@
-import { NextResponse, type NextRequest } from "next/server";
+import NextAuth from "next-auth";
+import { authConfig } from "@/auth.config";
 
-// Edge middleware seam. next-intl runs without i18n routing (locale via cookie),
-// so it needs no middleware. PR-005 wraps this with Auth.js using the split
-// (edge-safe) config — keep heavy/Node-only imports OUT of this file.
-export function middleware(_request: NextRequest) {
-  return NextResponse.next();
-}
+// Edge middleware: session check + route protection via the `authorized`
+// callback in authConfig (which redirects unauthenticated users in the (app)
+// area to /signin). Uses the edge-safe config — no DB/Node imports here.
+export default NextAuth(authConfig).auth;
 
 export const config = {
-  // Run on everything except Next internals and static assets.
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico).*)"],
+  // Run on app routes; skip Next internals, the auth API, and static files.
+  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.).*)"],
 };
