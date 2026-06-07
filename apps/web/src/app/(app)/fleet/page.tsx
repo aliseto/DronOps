@@ -18,19 +18,36 @@ export default async function FleetPage({
   searchParams: Promise<{ panel?: string }>;
 }) {
   const user = await getCurrentUser();
-  const orgId = user?.id ? await getActiveOrgId(user.id) : null;
-
-  const fleet = orgId ? await listFleet(orgId) : [];
-  const canManage =
-    orgId && user?.id
-      ? await hasAnyRole(orgId, user.id, ["quality_manager", "accountable_manager", "ops_manager"])
-      : false;
-  const jurisdictions = orgId ? await listEnabledJurisdictions(orgId) : [];
-
   const sp = await searchParams;
   const id = sp.panel?.startsWith("aircraft:") ? sp.panel.slice(9) : undefined;
-  const detail = orgId && id ? await getAircraftDetail(orgId, id) : null;
-  const history = orgId && id ? await getEntityHistory(orgId, "aircraft", id) : [];
+
+  // Best-effort: the page must still render (heading, shell) if the data layer is
+  // unavailable — e.g. the no-DB e2e environment. Degrades to an empty fleet.
+  let fleet: Awaited<ReturnType<typeof listFleet>> = [];
+  let canManage = false;
+  let jurisdictions: string[] = [];
+  let detail: Awaited<ReturnType<typeof getAircraftDetail>> = null;
+  let history: Awaited<ReturnType<typeof getEntityHistory>> = [];
+  try {
+    const orgId = user?.id ? await getActiveOrgId(user.id) : null;
+    if (orgId) {
+      fleet = await listFleet(orgId);
+      jurisdictions = await listEnabledJurisdictions(orgId);
+      if (user?.id) {
+        canManage = await hasAnyRole(orgId, user.id, [
+          "quality_manager",
+          "accountable_manager",
+          "ops_manager",
+        ]);
+      }
+      if (id) {
+        detail = await getAircraftDetail(orgId, id);
+        history = await getEntityHistory(orgId, "aircraft", id);
+      }
+    }
+  } catch {
+    // leave defaults
+  }
 
   const grounded = fleet.filter((a) => a.status === "grounded").length;
   const dueSoon = fleet.filter((a) => a.status === "due-soon").length;
