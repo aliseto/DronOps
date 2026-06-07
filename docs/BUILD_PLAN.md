@@ -97,11 +97,18 @@ numbers assigned as each PR opens.
   six categories with external on its own valid/review-due/expired model and a
   Replace flow, document↔requirement links, register + tabbed revision drawer
   (Overview/Revisions/Requirements/History) + role-aware exceptions (D-01/D-02).
-- PR-013 Distribution + acks with overdue escalation (D-03).
-- PR-014 Form template builder (D-05) + instance renderer; instances pin template
-  version (hard rule 6).
-- PR-015 Manual-suite pre-load as parameterized templates (D-04); onboarding
-  wizard fills parameters (flagged: owner supplies AIR-MAN parameter list).
+- PR-013 Distribution + acks ✅ — per revision, role/person audience, ack due
+  dates, acks immutable; "Acks due" as personal obligations (D-03, in-app only).
+- PR-014 Form-template builder ✅ — versioned (edit active → n+1, retire n;
+  active/retired immutable), instances pin version (hard rule 6), field types
+  incl. photo/GPS/signature, conditional sections, bilingual labels, FormRenderer
+  (D-05).
+- PR-015 Manual-suite pre-load (D-04) — schema + onboarding wizard + preload
+  manifest + stub-body rendering; verbatim bodies a later content PR. Per spec
+  v1.1: bid bands, structured pilot recency rule, RBAC vs text-only postholders,
+  legal-register → platform-module pointer, jurisdiction-conditional rendering.
+  **Flag: Indonesia (DGCA PM 37/2020) content pack is a future task — no `IDN`
+  jurisdiction mode yet, so FOM DGCA blocks gate on it and don't render today.**
 
 **Then** (per v2 ordering): M7 Personnel & Crew · M5 Fleet · M6 Flight Evidence
 (DJI parser — flagged: real logs) · M4 Operations · M2 Compliance (coverage

@@ -44,6 +44,9 @@ export { HistoryDrawer } from "./overlays/HistoryDrawer";
 // Data
 export { DataTable, type Column, type DataTableProps } from "./data/DataTable";
 
+// Forms
+export { FormRenderer } from "./forms/FormRenderer";
+
 // Shell
 export { AppShell, type AppShellProps, type NavItem, type LinkComponent } from "./shell/AppShell";
 export { PageHeader, type Crumb } from "./shell/PageHeader";
