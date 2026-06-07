@@ -11,6 +11,7 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/migrate.ts",
     "db:seed": "tsx src/seed.ts"
@@ -23,6 +24,7 @@
   "devDependencies": {
     "drizzle-kit": "catalog:",
     "tsx": "^4.19.0",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

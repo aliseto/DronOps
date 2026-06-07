@@ -1,3 +1,6 @@
-// Public surface of @dronops/db. The DB spine (client, schema, withTenant/
-// withAudit) lands in PR-004. Kept as a placeholder so the workspace resolves.
-export {};
+// Public surface of @dronops/db.
+export { getDb, getAdminDb, type AppDatabase, type Tx } from "./client";
+export { withTenant, type TenantCtx } from "./helpers/with-tenant";
+export { withAudit, type AuditEntry } from "./helpers/with-audit";
+export { mutate } from "./helpers/mutate";
+export * as schema from "./schema";
