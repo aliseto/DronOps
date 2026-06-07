@@ -22,4 +22,12 @@ export const CAPA_DEFAULTS: Partial<Record<Jurisdiction, CapaRule>> = {
   "UAE-Federal": { major: 7, minor: 60, observation: 90, unit: "calendar-days", clause: "UAC.045" },
 };
 
+/** Build-to-strictest fallback for jurisdictions without an explicit CAPA rule. */
+export const CAPA_DEFAULT: CapaRule = { major: 7, minor: 60, observation: 90, unit: "calendar-days", clause: "ISO 9001 §10.2" };
+
+/** The CAPA rule for a jurisdiction, falling back to the generic default. */
+export const capaRuleFor = (jurisdiction: string): CapaRule =>
+  CAPA_DEFAULTS[jurisdiction as Jurisdiction] ?? CAPA_DEFAULT;
+
 for (const r of Object.values(CAPA_DEFAULTS)) schema.parse(r);
+schema.parse(CAPA_DEFAULT);

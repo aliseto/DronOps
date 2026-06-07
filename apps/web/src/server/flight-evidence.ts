@@ -1,10 +1,11 @@
 import "server-only";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { getAdminDb, withTenant, type TenantCtx, type Tx } from "@dronops/db";
-import { auditEvents, aircraft, flightRecords, persons } from "@dronops/db/schema";
+import { auditEvents, aircraft, counters, findings, flightRecords, persons } from "@dronops/db/schema";
 import { parseFlightCsv } from "@dronops/parsers";
 import {
   applicableCeilingM,
+  deviationToFinding,
   flightDeviations,
   sha256Hex,
   type FlightDeviation,
@@ -165,6 +166,49 @@ export async function sealFlight(ctx: TenantCtx, id: string) {
       before: { status: "reconciled" },
       after: { status: "sealed" },
     });
+
+    // ── deviation → finding (M2) ── At SEAL (evidence complete + audited), each
+    // computed deviation auto-raises an OPEN, untriaged finding with the sealed
+    // flight log pre-attached. Triage (accept / downgrade / false-positive)
+    // happens in M2. Atomic with the seal; idempotent guard avoids double-raise.
+    const devs = (f.deviations ?? []) as FlightDeviation[];
+    if (Array.isArray(devs) && devs.length > 0) {
+      const existing = await tx
+        .select({ id: findings.id })
+        .from(findings)
+        .where(and(eq(findings.orgId, ctx.orgId), eq(findings.source, "flight_deviation"), eq(findings.sourceRef, id)))
+        .limit(1);
+      if (existing.length === 0) {
+        const raisedAt = new Date();
+        const raised: { code: string; deviationCode: string }[] = [];
+        for (const dev of devs) {
+          const auto = deviationToFinding(dev, f.jurisdiction ?? "", raisedAt);
+          const [c] = await tx
+            .insert(counters)
+            .values({ orgId: ctx.orgId, key: "finding", value: 1 })
+            .onConflictDoUpdate({ target: [counters.orgId, counters.key], set: { value: sql`${counters.value} + 1`, updatedAt: new Date() } })
+            .returning({ value: counters.value });
+          const code = `NCR-${String(c!.value).padStart(3, "0")}`;
+          await tx.insert(findings).values({
+            orgId: ctx.orgId,
+            code,
+            jurisdiction: f.jurisdiction,
+            source: "flight_deviation",
+            sourceRef: id,
+            deviationCode: auto.deviationCode,
+            level: auto.level,
+            severity: auto.severity,
+            status: "open",
+            title: auto.title,
+            description: auto.description,
+            evidenceFileId: f.evidenceFileId,
+            dueAt: auto.dueAt,
+          });
+          raised.push({ code, deviationCode: auto.deviationCode });
+        }
+        await audit(tx, ctx, { action: "finding.auto_raise", entityType: "flight_record", entityId: id, after: { raised } });
+      }
+    }
   });
 }
 

@@ -120,6 +120,13 @@
       "when": 1780860528300,
       "tag": "0016_red_morgan_stark",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1780862122835,
+      "tag": "0017_naive_night_thrasher",
+      "breakpoints": true
     }
   ]
 }

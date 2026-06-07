@@ -18,3 +18,4 @@ export * from "./credentials";
 export * from "./aircraft";
 export * from "./flight-records";
 export * from "./missions";
+export * from "./findings";
