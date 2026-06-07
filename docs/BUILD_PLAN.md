@@ -1,145 +1,126 @@
-# BUILD_PLAN.md v2 — DronOps production (Claude Code)
+# BUILD_PLAN.md v2.1 — DronOps production (Claude Code)
 
-Supersedes v1. Incorporates: the DronOps rename, M7 Personnel & Crew, the
-extracted GCC regulatory content (54 requirements, 5 frameworks), DRO-REG-001
-jurisdiction-mode architecture, and everything the Lovable prototype validated.
-Target unchanged: **P0 exit = Aironov runs 100% of its own operations here for
-30 consecutive days, zero parallel spreadsheets.** Multi-tenant SaaS posture
-from PR-001.
+**This is the canonical, in-repo plan: it reflects what is built, not what v1/v2
+proposed.** Supersedes v1 (Aironov Assure) and v2. Incorporates the DronOps
+rename, M7 Personnel & Crew, the extracted GCC regulatory content (54
+requirements, 5 frameworks), DRO-REG-001 jurisdiction-mode architecture, and
+everything the Lovable prototype validated. Target unchanged: **P0 exit =
+Aironov runs 100% of its own operations here for 30 consecutive days, zero
+parallel spreadsheets.** Multi-tenant SaaS posture from PR-001.
 
-## 0. What the prototype settles (don't re-litigate)
+## 0. Naming & modeling rulings (locked)
 
-Validated and carried forward: the design system in both themes; StatusPill
-status vocabulary; gate + logged-override interaction; currency-snapshot model;
-security-definer SoD pattern (close_finding, approve_revision); deny-by-default
-RLS with org-scoped policies; seal-immutability triggers; the G3 document
-scoping decisions (6 categories, single-stage approval, obsolete-forever-
-viewable, server-generated numbering, external docs skip approval); the
-jurisdiction two-layer model (org enables, record binds).
+- **`organizations` / `org_id` is canonical** (not `tenants`/`tenant_id`). Do not
+  rename.
+- **`persons` ≠ `memberships`** by design: `memberships` = platform access
+  (owner/admin/member); `persons` = operational identity (may exist without a
+  user, linked via `user_persons`). Domain RBAC lives in `person_roles`.
+- **Domain roles are a fixed code vocabulary** (`@dronops/shared` DOMAIN_ROLES:
+  accountable_manager, quality_manager, ops_manager, pilot, technician,
+  auditor_guest), referenced by string — not a tenant/global table. Role guards
+  read `person_roles`, never `memberships.role`.
+- **Auth.js, not Supabase Auth** → tenant isolation is a custom GUC
+  (`app.current_org_id`, `SET LOCAL`) + restricted `app_user` role
+  (`NOBYPASSRLS`, no DELETE). `withTenant`/`withAudit`/`mutate` are the only
+  sanctioned write path.
+- **Regulation is content** (`packages/content`); the DB stores only
+  `requirement_ref` strings.
 
-Prototype disposal: GitHub-sync export lands in `reference/lovable-prototype/`
-read-only. No code import. If real dogfood data accumulated in Lovable Cloud,
-a one-time CSV/SQL export migrates it at PR-034 (flagged item — owner confirms
-what exists).
+## 1. Phase 0 — canonical PR sequence (as built)
 
-What CC unlocks vs Lovable: real background jobs (Inngest), server-side PDF
-rendering, **binary DJI log parsing** (restored to plan — Node can do what Deno
-edge couldn't), offline-first PWA field capture, proper preview-deploy review
-flow, and region-controlled Postgres for the KSA data-residency decision.
+All on branch `claude/magical-heisenberg-ECY6G` (draft PR #1), each CI-green and
+verified against the live Supabase project `DronOps Dev` (ap-south-1).
 
-## 1. Architecture (delta from v1)
+| PR | Scope | Status |
+|----|-------|--------|
+| **PR-001** | Monorepo scaffold, TS strict, Tailwind v4, ESLint (raw-color ban), Prettier, Turbo, Vitest, Playwright, CI, docs | ✅ |
+| **PR-002** | Design tokens — graphite dual theme (dark/light/print via `data-theme`), `@theme inline`, fonts, theme toggle | ✅ |
+| **PR-003** | UI primitives (core) + **StatusPill** (single status source) + 7-module AppShell | ✅ |
+| **PR-004** | DB spine — custom-GUC RLS, `app_user` (no DELETE), append-only `audit_events`, immutability triggers, SoD helper, `withTenant`/`withAudit`/`mutate` | ✅ |
+| **PR-005** | Auth.js v5 — email+password (JWT), route protection, passkey step-up scaffold | ✅ |
+| **PR-006** | Org core — organizations / memberships / org_jurisdictions + onboarding checklist (Dubai dual-layer advisory) | ✅ |
+| **PR-007** | Content package — `dronops_requirements_seed.sql` → generated, zod-validated framework modules (54 requirements) | ✅ |
+| **PR-008** | Jurisdiction engine (`packages/shared`) — deadlineFor / capaDeadlineFor / retentionFor / completenessFor / gatesFor reading `packages/content/rules` | ✅ |
+| **PR-009 (A)** | Primitive completion (FormField, Tabs, Toast, Tooltip, EmptyState, Skeleton, Checkbox/Radio/Switch, Select, Combobox, DateField, Drawer, Modal) + **DataTable** (virtualized) + **/dev/ui** review surface + RTL smoke | ✅ |
+| **PR-010 (C)** | persons / user_persons / person_roles + domain RBAC guards + **audit_events monthly partitioning** + Timeline primitive + generic HistoryDrawer | ✅ |
+| **PR-011 (B)** | files (immutable, SHA-256 content-addressed) + signatures (immutable) + Supabase Storage evidence bucket + FileDrop + SignatureCeremony (Tier-3) + SignatureBlock | ✅ |
 
-Unchanged: Next.js app + Inngest workers + Postgres/Drizzle + object storage +
-packages/content. New emphasis:
+> Numbering note: the original v1 split foundations across PR-001–010 and v2
+> added PR-010.5 (content). This repo's commit history compressed them into
+> PR-001–006, then content (PR-007) + engine (PR-008), and the three foundation
+> catch-up PRs A/C/B land as **PR-009/010/011**. M1 starts at **PR-012**.
 
-- **packages/content** is now real on day one: convert
-  `dronops_requirements_seed.sql` into typed TS modules (one file per
-  framework) with a zod-validated loader; also home to: deadline rules
-  (UAE-Federal accident 3h, UAE-Dubai 72h, KSA 10d), retention rules (36-month
-  default; Dubai personnel employment-end+36m), CAPA defaults (GCAA 7/60/90d),
-  recency rules (KSA §107.71 24-month), registration validity (KSA Part 48
-  3y/6m window), and the flight-record completeness matrix from DRO-REG-001 §5.
-  DB stores requirement_ref strings only.
-- **Jurisdiction engine** (packages/shared): pure functions
-  `deadlineFor(record, jurisdiction)`, `retentionFor(...)`,
-  `completenessFor(flight, jurisdiction)`, `gatesFor(mission)` — all reading
-  content data. Every consumer (UI, jobs, pack generator) calls these; no
-  inline regulator logic anywhere.
-- **Tenancy**: organizations = tenants; org_jurisdictions table;
-  plan/entitlement stub interface (`getEntitlements(org)`) so billing can bolt
-  on later without refactor.
+### Architecture (unchanged from v2)
 
-## 2. Schema deltas from v1 §2
+Next.js app + Inngest workers + Postgres/Drizzle + Supabase Storage +
+`packages/content`. Jurisdiction engine is pure functions over content rules; no
+inline regulator logic anywhere. `org_jurisdictions` enables per-org; each
+governed record binds one jurisdiction.
 
-Keep v1 schema; apply: rename Assure→DronOps in comments only; add
-`org_jurisdictions`; missions/occurrences/aircraft-registrations carry
-`jurisdiction`; findings gains GCAA level-mapping fields; credentials gains
-`kind='knowledge_recency'`; flights gains take-off/landing areas, flight rules,
-op-type, airspace-approval ref, pilot sign-off signature_id (union schema);
-`pack_generations` (insert-only, hash-stamped); `retention metadata` computed,
-never enforced by deletion. The prototype's proven SQL mechanisms (counters
-table for refs, security-definer functions, immutability triggers) become the
-canonical migration patterns.
+### Schema state (built so far)
 
-## 3. PR sequence — Phase 0
+Spine: `audit_events` (partitioned), `organizations`, `memberships`,
+`org_jurisdictions`, `persons`, `user_persons`, `person_roles`, `files`,
+`signatures`; Auth.js identity tables (`users`/`accounts`/`sessions`/
+`verification_tokens`/`authenticators`/`webauthn_challenges`, RLS deny-all).
+Module tables (M1–M7) are added by their milestone PRs per §3.
 
-Foundations (PR-001–010) as v1 with three changes:
-- **PR-002** Design tokens: import DESIGN_SYSTEM.md as-is (rename instances of
-  Assure→DronOps); add print stylesheet tokens.
-- **PR-006** DB core now includes `org_jurisdictions` + org onboarding wizard
-  skeleton (create org → enable jurisdictions → invite members).
-- **PR-010.5 (new) Content package.** Convert the seed SQL to packages/content
-  TS data + loader + the rule tables above; unit tests assert every requirement
-  id from the seed loads and every DRO-REG-001 §15.1 locked decision has a
-  corresponding rule entry. ✅ jurisdiction engine functions return correct
-  values for the 3h/72h/10d and 7/60/90d cases.
+## 2. Remaining open foundation items (flagged, not blocking)
 
-M1 Documents (PR-011–014): as v1, but locked to the G3 scoping decisions
-(categories incl. external, single-stage approval, server numbering with
-custom-number override, obsolete-forever-viewable, in-app notifications only).
+- **Inngest** — config/skeleton only; no jobs wired yet (first needed at M6
+  ingestion / partition roll-forward / currency snapshots).
+- **`app_user` runtime connection** — LOGIN + password provisioned per
+  environment; RLS proven via the live SQL harness. Onboarding/auth/files use the
+  admin client this phase.
+- **Storage + service-role key** — wired in code; `SUPABASE_SERVICE_ROLE_KEY`
+  provisioned per environment.
+- **Notifications / exceptions-first dashboard** — placeholder; lands at P0
+  hardening.
 
-M7 Personnel (PR-015–016, moved earlier than v1 because gates depend on it):
-credential wallet incl. external + recency kinds, verification workflow, type
-approvals, currency snapshot engine (jurisdiction-aware per content rules),
-person dashboard. ✅ KSA pilot without recency event → lapsed citing §107.71.
+## 3. Forward sequence (modules)
 
-M5 Fleet (PR-017–019): as v1 + drone type profiles, per-jurisdiction
-registrations with KSA Part 48 expiry logic, AC 107-01 maintenance logbook
-schema, firmware register.
+Module ordering follows v2 (gates depend on M7; ingestion feeds M5/M7). Exact
+numbers assigned as each PR opens.
 
-M6 Ingestion (PR-020–023): CSV import first (prototype-validated mapping incl.
-union-schema columns), then **DJI TXT binary parser** in packages/parsers with
-golden files (owner supplies 10+ real logs — flagged), FlightHub 2 cloud pull,
-auto-tabulation fan-out, mission auto-match + unmatched queue, deviation engine
-with the full rule set incl. night-without-approval (real sunset calc now —
-suncalc, not the fixed-window approximation) and jurisdiction-aware
-completeness validation at reconcile. ✅ each rule has a tripping fixture.
+**M1 Documents — PR-012–015** (next)
+- PR-012 Documents + revisions: CRUD (no hard delete), revision lifecycle
+  draft→review→approved with approval chain + **signatures** (wires PR-011
+  SignatureCeremony, role-gated via PR-010 guards), single-current rule +
+  obsolete-forever-viewable (D-01/D-02).
+- PR-013 Distribution + acks with overdue escalation (D-03).
+- PR-014 Form template builder (D-05) + instance renderer; instances pin template
+  version (hard rule 6).
+- PR-015 Manual-suite pre-load as parameterized templates (D-04); onboarding
+  wizard fills parameters (flagged: owner supplies AIR-MAN parameter list).
 
-M4 Operations (PR-024–027): mission builder with jurisdiction binding,
-currency/asset/registration gates + logged override, approval chains with
-signatures, ops calendar with M7 availability, clients/projects/sites with CSV
-import, forms engine (templates/instances, jurisdiction-aware preflight
-families per DRO-REG-001 §9), pilot end-of-operation sign-off for UAE-Dubai
-flights, mission pack seal.
-
-M2 Compliance (PR-028–031): coverage matrix per enabled jurisdiction
-(grouped by framework, guidance-flagged AC rows), NCR/CAPA with SoD +
-deviation→NCR closed loop + GCAA level defaults & repeated-finding escalation,
-internal audits, management review compile+seal, **server-side PDF audit
-packs** (regulator/ISO/mission audiences, hash-stamped into pack_generations,
-time-boxed guest links).
-
-M3 + occurrence engine (PR-032): occurrences with jurisdiction deadline
-countdowns (3h/72h/10d), reportable-category lists per framework,
-escalate-to-finding, hazard register + risk assessments (simple + SORA-style
-profiles).
-
-Hardening (PR-033–036): notifications (in-app + email via provider — flagged),
-dashboards (exceptions-first, live activity from audit_events), dogfood data
-migration from prototype (flagged: confirm source), offline PWA field capture,
-P0 QA pass (both themes, RTL smoke, perf, backup/restore drill).
-✅ **30-day clock starts.**
+**Then** (per v2 ordering): M7 Personnel & Crew · M5 Fleet · M6 Flight Evidence
+(DJI parser — flagged: real logs) · M4 Operations · M2 Compliance (coverage
+matrix + NCR/CAPA closing the deviation→finding loop) · M3 Safety & occurrence
+engine · P0 hardening (notifications, dogfood migration, offline PWA, QA pass).
+✅ **30-day clock starts** at the end of hardening.
 
 ## 4. Phase 1+ (epic level)
 
 Org self-serve onboarding + entitlements · Arabic regulator-facing outputs ·
-STS-B1 declaration workspace (content update when publication confirmed —
-DRO-REG-001 §15.2) · TMS currency bridge · duty/rest engine with OSO#17 values
-transcribed (flagged in DRO-REG-001) · dock telemetry · client portal ·
-KSA data region decision at first KSA tenant.
+STS-B1 declaration workspace · TMS currency bridge · duty/rest engine (OSO#17
+values — flagged) · dock telemetry · client portal · KSA data-region decision at
+first KSA tenant.
 
 ## 5. Testing strategy
 
-As v1, plus: jurisdiction-engine table-driven tests are first-class (every
-deadline/retention/gate value asserted against DRO-REG-001); golden-file
-parser suite; the end-to-end story test from the prototype's G8 (intake →
-mission → override → approval → preflight → import → deviation → NCR → CAPA →
-close → management review → pack) automated in Playwright as the release gate.
+Unit (Vitest): tenancy/audit helpers, SoD rules, jurisdiction engine
+(table-driven against DRO-REG-001), content loader zod, hashing/canonicalization,
+currency + inspection math (as built). Golden-file parser suite (M6).
+Both-directions tenant-isolation tests for every org-scoped table (live SQL
+harness now; `tenantIsolationSuite` guarded on DATABASE_URL for CI). E2E
+(Playwright): auth redirect + sign-in, app-shell nav, dual-theme, RTL smoke; the
+G8 end-to-end story test becomes the release gate as modules land.
 
 ## 6. Flag-don't-improvise
 
-1. Real DJI logs before PR-021. 2. Email provider (PR-033). 3. Prototype data
-export contents (PR-034). 4. OSO#17 numeric duty values (Phase 1). 5. STS-B1
-publication (Phase 1). 6. Hosting/region for production Postgres (decide at
-PR-001: provider + region, owner call). 7. Any new top-level table → schema
-proposal in PR description first.
+1. Real DJI logs before M6 parser. 2. Email provider (notifications).
+3. Prototype data export contents (dogfood migration). 4. OSO#17 numeric duty
+values (Phase 1). 5. STS-B1 publication (Phase 1). 6. Manual-suite
+parameterization fields (PR-015). 7. ISO 9001 clause content — separate
+authoring task, never invented. 8. Any new top-level table → schema proposal in
+the PR description first.
