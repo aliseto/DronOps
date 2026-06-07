@@ -11,18 +11,34 @@ export default async function PersonnelPage({
   searchParams: Promise<{ panel?: string }>;
 }) {
   const user = await getCurrentUser();
-  const orgId = user?.id ? await getActiveOrgId(user.id) : null;
-
-  const crew = orgId ? await listCrew(orgId) : [];
-  const canManage =
-    orgId && user?.id
-      ? await hasAnyRole(orgId, user.id, ["quality_manager", "accountable_manager", "ops_manager"])
-      : false;
-
   const sp = await searchParams;
   const personId = sp.panel?.startsWith("person:") ? sp.panel.slice(7) : undefined;
-  const detail = orgId && personId ? await getPersonDetail(orgId, personId) : null;
-  const history = orgId && personId ? await getEntityHistory(orgId, "person", personId) : [];
+
+  // Best-effort: still render the shell/heading if the data layer is unavailable
+  // (no-DB e2e). Degrades to an empty roster.
+  let crew: Awaited<ReturnType<typeof listCrew>> = [];
+  let canManage = false;
+  let detail: Awaited<ReturnType<typeof getPersonDetail>> = null;
+  let history: Awaited<ReturnType<typeof getEntityHistory>> = [];
+  try {
+    const orgId = user?.id ? await getActiveOrgId(user.id) : null;
+    if (orgId) {
+      crew = await listCrew(orgId);
+      if (user?.id) {
+        canManage = await hasAnyRole(orgId, user.id, [
+          "quality_manager",
+          "accountable_manager",
+          "ops_manager",
+        ]);
+      }
+      if (personId) {
+        detail = await getPersonDetail(orgId, personId);
+        history = await getEntityHistory(orgId, "person", personId);
+      }
+    }
+  } catch {
+    // leave defaults
+  }
 
   // Role-aware exceptions (UX_SYSTEM §1.3): people who block assignment now.
   const blocking = crew.filter((c) => c.blocksAssignment).length;
