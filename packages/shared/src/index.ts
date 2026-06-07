@@ -14,5 +14,6 @@ export * from "./operations/engine";
 export * from "./operations/lifecycle";
 export * from "./operations/activity";
 export * from "./compliance/findings";
+export * from "./compliance/coverage";
 // env is intentionally NOT re-exported here — import it from "@dronops/shared/env"
 // in server-only contexts to avoid pulling process.env into client bundles.
