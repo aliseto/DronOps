@@ -11,3 +11,4 @@ export * from "./person-roles";
 export * from "./files";
 export * from "./signatures";
 export * from "./documents";
+export * from "./document-distributions";
