@@ -10,3 +10,4 @@ export * from "./persons";
 export * from "./person-roles";
 export * from "./files";
 export * from "./signatures";
+export * from "./documents";

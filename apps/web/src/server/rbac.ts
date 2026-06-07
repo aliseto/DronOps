@@ -42,3 +42,24 @@ export async function requireRole(
     throw new Error(`This action requires the ${role} role.`);
   }
 }
+
+export async function hasAnyRole(
+  orgId: string,
+  userId: string,
+  roles: DomainRole[],
+): Promise<boolean> {
+  const personId = await getCurrentPersonId(orgId, userId);
+  if (!personId) return false;
+  const have = await getPersonRoles(orgId, personId);
+  return roles.some((r) => have.includes(r));
+}
+
+export async function requireAnyRole(
+  orgId: string,
+  userId: string,
+  roles: DomainRole[],
+): Promise<void> {
+  if (!(await hasAnyRole(orgId, userId, roles))) {
+    throw new Error(`This action requires one of: ${roles.join(", ")}.`);
+  }
+}

@@ -43,6 +43,13 @@
       "when": 1780825373982,
       "tag": "0005_redundant_cloak",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780826467190,
+      "tag": "0006_ancient_mother_askani",
+      "breakpoints": true
     }
   ]
 }
