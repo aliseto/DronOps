@@ -14,7 +14,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@dronops/shared": "workspace:*"
+    "@dronops/shared": "workspace:*",
+    "@tanstack/react-virtual": "^3.11.0"
   },
   "peerDependencies": {
     "react": "catalog:",

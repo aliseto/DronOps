@@ -22,7 +22,10 @@ export function PageHeader({
   return (
     <div className={cn("border-b border-subtle px-6 py-4", className)}>
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav aria-label="Breadcrumb" className="mb-1 flex items-center gap-1 text-micro text-fg-muted">
+        <nav
+          aria-label="Breadcrumb"
+          className="mb-1 flex items-center gap-1 text-micro text-fg-muted"
+        >
           {breadcrumbs.map((c, i) => (
             <span key={`${c.label}-${i}`} className="flex items-center gap-1">
               {i > 0 && <span aria-hidden>/</span>}

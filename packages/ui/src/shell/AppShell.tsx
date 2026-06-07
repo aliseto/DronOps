@@ -116,7 +116,9 @@ export function AppShell({
             />
           </button>
         </div>
-        <div className="flex flex-1 flex-col gap-1 overflow-y-auto p-2">{items.map(renderItem)}</div>
+        <div className="flex flex-1 flex-col gap-1 overflow-y-auto p-2">
+          {items.map(renderItem)}
+        </div>
         {footerItems.length > 0 && (
           <div className="flex flex-col gap-1 border-t border-subtle p-2">
             {footerItems.map(renderItem)}

@@ -12,13 +12,7 @@ export type StatusTone = "ok" | "warn" | "danger" | "info" | "neutral";
 export interface StatusVocab {
   currency: "current" | "expiring" | "lapsed" | "unverified";
   asset: "operational" | "due-soon" | "in-maintenance" | "grounded";
-  mission:
-    | "draft"
-    | "pending-approval"
-    | "approved"
-    | "in-progress"
-    | "reconciling"
-    | "sealed";
+  mission: "draft" | "pending-approval" | "approved" | "in-progress" | "reconciling" | "sealed";
   ncr: "open" | "containment" | "capa-in-progress" | "verify" | "closed" | "false-positive";
   document: "draft" | "in-review" | "effective" | "obsolete";
   coverage: "covered" | "partial" | "gap" | "n-a";
