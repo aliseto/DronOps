@@ -10,13 +10,15 @@ import {
   Select,
   StatusPill,
   Timeline,
+  Textarea,
   type StatusVocab,
   type TimelineEvent,
 } from "@dronops/ui";
-import type { MissionDetail } from "@/server/operations";
+import type { MissionDetail, ThreadEntry } from "@/server/operations";
 import {
   addInboundDocumentAction,
   addLocationAction,
+  addMissionNoteAction,
   assignCrewAction,
   confirmGreenZoneAction,
   importKmlAction,
@@ -24,6 +26,18 @@ import {
   recordApprovalAction,
   transitionMissionAction,
 } from "../actions";
+
+const ACTIVITY_LABELS: Record<string, string> = {
+  "mission.create": "Mission created",
+  "mission.transition": "Status changed",
+  "mission_crew.assign": "Crew assigned",
+  "mission_crew.override": "Override logged",
+  "mission_document.add": "Document added",
+  "mission_location.add": "Location added",
+  "mission_location.import_kml": "AOI imported (KML)",
+  "mission.green_zone_confirm": "Green-zone confirmed",
+};
+const fmtAt = (iso: string) => iso.slice(0, 16).replace("T", " ");
 
 type Lifecycle = StatusVocab["lifecycle"];
 const fmtDate = (iso: string | null) => (iso ? iso.slice(0, 10) : "—");
@@ -35,13 +49,15 @@ export function MissionDetailView({
   transitions,
   persons,
   roles,
-  history,
+  thread,
+  canNote,
 }: {
   detail: MissionDetail;
   transitions: { to: string; label: string; crewGate?: boolean }[];
   persons: { id: string; name: string }[];
   roles: string[];
-  history: TimelineEvent[];
+  thread: ThreadEntry[];
+  canNote: boolean;
 }) {
   const m = detail.mission;
   const r = detail.readiness;
@@ -242,13 +258,41 @@ export function MissionDetailView({
             </Card>
           )}
 
-          <Card title="History">
-            {history.length ? <Timeline events={history} /> : <p className="text-small text-fg-muted">No history yet.</p>}
+          <Card title={`Activity${detail.notes.count ? ` · ${detail.notes.count} note${detail.notes.count === 1 ? "" : "s"}` : ""}`}>
+            {canNote && (
+              <form action={addMissionNoteAction} className="mb-3 flex flex-col gap-2" encType="multipart/form-data">
+                <input type="hidden" name="missionId" value={m.id} />
+                <Textarea name="body" rows={2} placeholder="Add a note to the mission log…" required />
+                <div className="flex items-center justify-between gap-2">
+                  <input type="file" name="file" className="text-micro text-fg-secondary" />
+                  <Button type="submit" variant="secondary">Add note</Button>
+                </div>
+              </form>
+            )}
+            {thread.length ? <Timeline events={thread.map(toTimeline)} /> : <p className="text-small text-fg-muted">No activity yet.</p>}
           </Card>
         </div>
       </div>
     </div>
   );
+}
+
+function toTimeline(e: ThreadEntry): TimelineEvent {
+  if (e.kind === "note") {
+    return {
+      id: e.id,
+      action: "Note",
+      actor: e.actor,
+      at: fmtAt(e.at),
+      summary: (
+        <span>
+          {e.body}
+          {e.hasAttachment ? <span className="text-fg-muted"> · 📎 attachment</span> : null}
+        </span>
+      ),
+    };
+  }
+  return { id: e.id, action: ACTIVITY_LABELS[e.action] ?? e.action, actor: e.actor, at: fmtAt(e.at) };
 }
 
 function OverrideForm({ missionCrewId, reasons }: { missionCrewId: string; reasons: string[] }) {

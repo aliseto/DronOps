@@ -2,9 +2,8 @@ import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { getActiveOrgId } from "@/server/active-org";
 import { getCurrentPersonId, getPersonRoles } from "@/server/rbac";
-import { getEntityHistory } from "@/server/history";
 import { listPersons } from "@/server/distributions";
-import { getMissionDetail } from "@/server/operations";
+import { getMissionDetail, getMissionThread } from "@/server/operations";
 import { allowedTransitions, type MissionState } from "@dronops/shared";
 import { MissionDetailView } from "./MissionDetailView";
 
@@ -20,7 +19,7 @@ export default async function MissionPage({ params }: { params: Promise<{ id: st
   const personId = user?.id ? await getCurrentPersonId(orgId, user.id) : null;
   const roles = personId ? await getPersonRoles(orgId, personId) : [];
   const persons = await listPersons(orgId);
-  const history = await getEntityHistory(orgId, "mission", id);
+  const thread = await getMissionThread(orgId, id);
   const transitions = allowedTransitions(detail.mission.status as MissionState, roles).map((t) => ({
     to: t.to,
     label: t.label,
@@ -33,7 +32,8 @@ export default async function MissionPage({ params }: { params: Promise<{ id: st
       transitions={transitions}
       persons={persons}
       roles={roles}
-      history={history}
+      thread={thread}
+      canNote={roles.includes("operations_team") || roles.includes("approval_admin") || roles.includes("ops_manager")}
     />
   );
 }
