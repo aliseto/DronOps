@@ -46,11 +46,14 @@ describe("credential kinds + currency rules", () => {
     expect(OPERATOR_RECENCY_DEFAULT.configurable).toBe(true);
   });
 
-  it("UAE-Dubai duty scheme exists but OSO#17 values are pending (flagged)", () => {
+  it("UAE-Dubai duty scheme carries the OSO#17 v1.4 values, specific-category only", () => {
     const s = DUTY_SCHEMES["UAE-Dubai"];
     expect(s?.clause).toBe("DUOSAM OSO#17");
-    expect(s?.valuesPending).toBe(true);
-    expect(s?.maxDutyHoursPerPeriod).toBeNull();
+    expect(s?.appliesWhenRiskTier).toBe("high");
+    expect(s?.maxDutyMinutesBase).toBe(780);
+    expect(s?.dutyReductionPerExtraAreaMinutes).toBe(60);
+    expect(s?.maxFlightBlockMinutesPerDay).toBe(240);
+    expect(s?.minRestMinutesFloor).toBe(480);
   });
 
   it("every credential kind has a unique code", () => {

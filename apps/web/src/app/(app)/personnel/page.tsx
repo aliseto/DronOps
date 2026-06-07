@@ -66,6 +66,7 @@ export default async function PersonnelPage({
               })),
               duty: {
                 status: detail.duty.projection.status,
+                blockTime: detail.duty.projection.blockTime,
                 clause: detail.duty.projection.clause,
                 breaches: detail.duty.projection.breaches.map((b) => ({ kind: b.kind, detail: b.detail })),
                 schemeJurisdiction: detail.duty.schemeJurisdiction,
@@ -75,6 +76,7 @@ export default async function PersonnelPage({
                   endAt: d.endAt.toISOString(),
                   missionRef: d.missionRef,
                   planned: d.planned,
+                  extraFlightAreas: d.extraFlightAreas,
                 })),
               },
               credentials: detail.credentials.map((c) => ({

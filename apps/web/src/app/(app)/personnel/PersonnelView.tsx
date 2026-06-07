@@ -98,10 +98,18 @@ interface Detail {
   readiness: ReadinessCard[];
   duty: {
     status: string;
+    blockTime: string;
     clause?: string;
     breaches: { kind: string; detail: string }[];
     schemeJurisdiction: string | null;
-    records: { id: string; startAt: string; endAt: string; missionRef: string | null; planned: boolean }[];
+    records: {
+      id: string;
+      startAt: string;
+      endAt: string;
+      missionRef: string | null;
+      planned: boolean;
+      extraFlightAreas: number;
+    }[];
   };
   credentials: CredView[];
   recency: RecencyView[];
@@ -504,17 +512,15 @@ function DutySummary({ detail }: { detail: Detail }) {
       ? "text-status-danger-fg"
       : detail.duty.status === "ok"
         ? "text-status-ok-fg"
-        : "text-fg-muted"; // not-applicable / not-configured / no-scheme are neutral, never amber
+        : "text-fg-muted"; // not-applicable / no-scheme are neutral, never amber
   const label =
     detail.duty.status === "not-applicable"
       ? "Not applicable (no specific-category Dubai ops)"
-      : detail.duty.status === "not-configured"
-        ? "Not configured (OSO#17 values pending)"
-        : detail.duty.status === "no-scheme"
-          ? "No duty scheme in enabled jurisdictions"
-          : detail.duty.status === "breach"
-            ? `${detail.duty.breaches.length} breach(es)`
-            : "Within limits";
+      : detail.duty.status === "no-scheme"
+        ? "No duty scheme in enabled jurisdictions"
+        : detail.duty.status === "breach"
+          ? `${detail.duty.breaches.length} breach(es)`
+          : "Within limits";
   return (
     <div className="mt-1 flex items-center justify-between rounded-md border border-default px-3 py-2.5">
       <span className="flex flex-col">
@@ -709,10 +715,11 @@ function DutyTab({ detail, canManage }: { detail: Detail; canManage: boolean }) 
           assignment.
         </p>
       )}
-      {detail.duty.status === "not-configured" && (
-        <p className="rounded-md bg-status-warn-bg px-3 py-2 text-micro text-status-warn-fg">
-          OSO#17 numeric limits are pending transcription from source — the engine reports “not configured” rather
-          than a false pass. Breach detection activates once the values land.
+      {detail.duty.status !== "not-applicable" && detail.duty.status !== "no-scheme" && (
+        <p className="rounded-md border border-default px-3 py-2 text-micro text-fg-muted">
+          OSO#17 live: duty ≤ 780 min/day (−60/extra area), rest ≥ max(last duty, 480 min), ≥1 day off / 7 d.
+          Block time (≤240 min/day) is <span className="text-fg-secondary">awaiting M6</span> flight records — not
+          evaluated yet, and never reported as a pass.
         </p>
       )}
       {detail.duty.breaches.length > 0 && (
@@ -732,6 +739,9 @@ function DutyTab({ detail, canManage }: { detail: Detail; canManage: boolean }) 
             <li key={d.id} className="flex items-center justify-between rounded-md border border-default px-3 py-2 text-small">
               <span className="font-mono tabular-nums text-fg-secondary">
                 {d.startAt.slice(0, 16).replace("T", " ")} → {d.endAt.slice(11, 16)}
+                {d.extraFlightAreas > 0 && (
+                  <span className="ms-2 text-micro text-fg-muted">+{d.extraFlightAreas} area(s)</span>
+                )}
               </span>
               <span className="text-micro text-fg-muted">{d.missionRef ?? (d.planned ? "planned" : "logged")}</span>
             </li>
@@ -749,6 +759,10 @@ function DutyTab({ detail, canManage }: { detail: Detail; canManage: boolean }) 
             <label className="flex flex-col gap-1 text-small">
               <span className="text-fg-muted">End</span>
               <Input name="endAt" type="datetime-local" required />
+            </label>
+            <label className="flex flex-col gap-1 text-small">
+              <span className="text-fg-muted">Extra areas</span>
+              <Input name="extraFlightAreas" type="number" min={0} defaultValue={0} className="w-24" />
             </label>
             <label className="flex flex-col gap-1 text-small">
               <span className="text-fg-muted">Mission ref</span>

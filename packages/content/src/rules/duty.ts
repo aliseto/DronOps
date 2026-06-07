@@ -4,40 +4,57 @@ import { type JURISDICTION_KEYS } from "../jurisdictions";
 type Jurisdiction = (typeof JURISDICTION_KEYS)[number];
 
 /**
- * Duty / rest scheme rule data (DRO-REG-001 §7, DUOSAM OSO#17 — UAE-Dubai). The
- * duty engine in @dronops/shared reads these. The scheme STRUCTURE is fixed and
- * testable now; the numeric maxima/minima are an OPEN ITEM pending the owner —
- * DRO-REG-001 §16.2 flags "extract the specific hour values from the OM template
- * tables at duty-engine build". Stubbed values are `null`, and the engine reports
- * a configured scheme with null limits as "not-configured" rather than passing.
+ * Duty / rest scheme rule data — DUOSAM OSO#17 (DCAR-UAS), extracted from source
+ * v1.4 (docs/dronops_duty_rules_oso17_v1.4.sql). The duty engine in
+ * @dronops/shared reads these; no value is embedded in the engine.
  *
- * Company agreements may only TIGHTEN these (DUOSAM) — orgs override downward in
- * org_currency_rules; never above the regulator maximum once values land.
+ * Scope: applies ONLY to UAE-Dubai SPECIFIC-CATEGORY operations
+ * (`appliesWhenRiskTier: "high"`). A standard/open-category Dubai operation does
+ * not invoke OSO#17 — its duty card stays "not applicable".
+ *
+ * Duty values are MAXIMA, rest values are MINIMA; company/collective agreements
+ * may only TIGHTEN them, never extend. (Self-declaration of fitness is a
+ * pre-commencement checklist item on specific-category missions — M4.)
  */
 const schemeSchema = z.object({
+  jurisdiction: z.literal("UAE-Dubai"),
+  objective: z.literal("OSO#17"),
+  /** Specific-category only — the risk_tier the scheme binds to (re-tag v1.3). */
+  appliesWhenRiskTier: z.literal("high"),
   clause: z.string().min(1),
-  /** null until the owner transcribes the OSO#17 table values. */
-  maxDutyHoursPerPeriod: z.number().positive().nullable(),
-  /** Rolling window (hours) the duty maximum applies over. */
-  dutyPeriodHours: z.number().positive().nullable(),
-  /** Minimum continuous rest (hours) between duty periods. */
-  minRestHours: z.number().positive().nullable(),
-  /** Max consecutive duty days before a required rest day. */
-  maxConsecutiveDutyDays: z.number().int().positive().nullable(),
-  /** True once every numeric value above is populated from source. */
-  valuesPending: z.boolean(),
+  /** Max flight-duty per day, all crew (13 h). */
+  maxDutyMinutesBase: z.number().int().positive(),
+  /** −1 h of allowable duty per ADDITIONAL flight area. */
+  dutyReductionPerExtraAreaMinutes: z.number().int().nonnegative(),
+  /** Max flight/block time per day, remote pilots (4 h) — sourced from M6. */
+  maxFlightBlockMinutesPerDay: z.number().int().positive(),
+  /** Absolute rest floor between duties (8 h). */
+  minRestMinutesFloor: z.number().int().positive(),
+  /** Rest must be ≥ the duration of the last duty period (but never below the floor). */
+  minRestRule: z.literal("ge_last_duty"),
+  /** ≥ this many full days off in any rolling 7-day window. */
+  minDaysOffPer7d: z.number().int().positive(),
 });
 export type DutySchemeRule = z.infer<typeof schemeSchema>;
 
 export const DUTY_SCHEMES: Partial<Record<Jurisdiction, DutySchemeRule>> = {
   "UAE-Dubai": {
+    jurisdiction: "UAE-Dubai",
+    objective: "OSO#17",
+    appliesWhenRiskTier: "high",
     clause: "DUOSAM OSO#17",
-    maxDutyHoursPerPeriod: null,
-    dutyPeriodHours: null,
-    minRestHours: null,
-    maxConsecutiveDutyDays: null,
-    valuesPending: true,
+    maxDutyMinutesBase: 780,
+    dutyReductionPerExtraAreaMinutes: 60,
+    maxFlightBlockMinutesPerDay: 240,
+    minRestMinutesFloor: 480,
+    minRestRule: "ge_last_duty",
+    minDaysOffPer7d: 1,
   },
 };
 
 for (const s of Object.values(DUTY_SCHEMES)) schemeSchema.parse(s);
+
+/** Max allowable duty (minutes) for a day given the number of EXTRA flight areas. */
+export function maxDutyMinutes(scheme: DutySchemeRule, extraFlightAreas: number): number {
+  return scheme.maxDutyMinutesBase - extraFlightAreas * scheme.dutyReductionPerExtraAreaMinutes;
+}
