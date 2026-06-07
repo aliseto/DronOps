@@ -17,6 +17,7 @@ import {
 } from "@/server/documents";
 import { uploadEvidence } from "@/server/files";
 import { logFileAccess } from "@/server/files-access";
+import { acknowledgeDistribution, distributeRevision } from "@/server/distributions";
 
 async function ctx() {
   const user = await getCurrentUser();
@@ -89,6 +90,28 @@ export async function approveRevisionAction(
 
 export async function logDownloadAction(fileId: string, documentId: string) {
   await logFileAccess(await ctx(), fileId, documentId);
+}
+
+export async function distributeAction(revisionId: string, formData: FormData) {
+  const c = await ctx();
+  const audienceType = String(formData.get("audienceType") ?? "role") === "person" ? "person" : "role";
+  const audienceRef = String(formData.get("audienceRef") ?? "").trim();
+  if (!audienceRef) throw new Error("Select an audience");
+  const ackRequired = formData.get("ackRequired") != null;
+  const due = String(formData.get("dueAt") ?? "").trim();
+  await distributeRevision(c, revisionId, {
+    audienceType,
+    audienceRef,
+    ackRequired,
+    dueAt: due ? new Date(due) : undefined,
+  });
+  revalidatePath("/documents");
+}
+
+export async function acknowledgeAction(distributionId: string) {
+  await acknowledgeDistribution(await ctx(), distributionId);
+  revalidatePath("/documents");
+  revalidatePath("/dashboard");
 }
 
 /** External docs: upload a new file + set a new review date (old retained). */

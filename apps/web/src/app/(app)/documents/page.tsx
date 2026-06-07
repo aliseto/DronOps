@@ -1,8 +1,9 @@
 import { getCurrentUser } from "@/lib/session";
 import { getActiveOrgId } from "@/server/active-org";
 import { getDocumentWithRevisions, listDocuments } from "@/server/documents";
-import { getCurrentPersonId, hasAnyRole } from "@/server/rbac";
+import { getCurrentPersonId, getPersonRoles, hasAnyRole } from "@/server/rbac";
 import { getEntityHistory } from "@/server/history";
+import { listDistributionsForRevision, listPersons } from "@/server/distributions";
 import { DocumentsView } from "./DocumentsView";
 
 export default async function DocumentsPage({
@@ -40,8 +41,27 @@ export default async function DocumentsPage({
   const detail = orgId && docId ? await getDocumentWithRevisions(orgId, docId) : null;
   const history = orgId && docId ? await getEntityHistory(orgId, "document", docId) : [];
 
+  // Distribution context for the open document's current approved revision.
+  const currentRev = detail?.revisions.find((r) => r.status === "approved") ?? null;
+  const viewerRoles = orgId && personId ? await getPersonRoles(orgId, personId) : [];
+  const distributions =
+    orgId && currentRev
+      ? await listDistributionsForRevision(
+          orgId,
+          currentRev.id,
+          personId ? { personId, roles: viewerRoles } : undefined,
+        )
+      : [];
+  const people = orgId && detail ? await listPersons(orgId) : [];
+
   return (
     <DocumentsView
+      currentRevisionId={currentRev?.id ?? null}
+      persons={people}
+      distributions={distributions.map((d) => ({
+        ...d,
+        dueAt: d.dueAt ? d.dueAt.toISOString() : null,
+      }))}
       docs={docs.map((d) => ({
         id: d.id,
         docNo: d.docNo,
