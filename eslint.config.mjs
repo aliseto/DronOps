@@ -59,5 +59,12 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Build/tooling scripts run in Node.
+    files: ["**/scripts/**", "**/*.config.{js,mjs,ts}"],
+    languageOptions: {
+      globals: { console: "readonly", process: "readonly", URL: "readonly" },
+    },
+  },
   prettier,
 );

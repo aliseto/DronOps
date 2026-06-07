@@ -1,3 +1,5 @@
-// Regulation-as-content. The requirement library (PR-010.5) converts
-// docs/dronops_requirements_seed.sql into typed framework modules here.
+// Regulation-as-content (versioned data). The DB stores only requirement_ref
+// strings; everything about a requirement lives here, so content updates never
+// require data migrations.
 export * from "./jurisdictions";
+export * from "./requirements";
