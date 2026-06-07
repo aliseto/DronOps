@@ -231,6 +231,9 @@ importers:
 
   packages/shared:
     dependencies:
+      '@dronops/content':
+        specifier: workspace:*
+        version: link:../content
       zod:
         specifier: 'catalog:'
         version: 3.25.76

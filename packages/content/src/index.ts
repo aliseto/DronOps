@@ -3,3 +3,4 @@
 // require data migrations.
 export * from "./jurisdictions";
 export * from "./requirements";
+export * from "./rules";
