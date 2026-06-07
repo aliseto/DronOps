@@ -4,3 +4,4 @@
 export * from "./jurisdictions";
 export * from "./requirements";
 export * from "./rules";
+export * from "./manual-suite";
