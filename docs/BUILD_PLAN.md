@@ -125,9 +125,22 @@ numbers assigned as each PR opens.
   **Flag: Indonesia (DGCA PM 37/2020) content pack is a future task — no `IDN`
   jurisdiction mode yet, so FOM DGCA blocks gate on it and don't render today.**
 
-**M1 Documents is complete (PR-012–015).** Next milestone: M7 Personnel & Crew.
+**M1 Documents is complete (PR-012–015).**
 
-**Then** (per v2 ordering): M7 Personnel & Crew · M5 Fleet · M6 Flight Evidence
+**M7 Personnel & Crew (PR-018)** — currency engine (credential wallet currency +
+operator recency ≥3/90 d configurable + KSA §107.71 knowledge recency + Oman
+medical gate 102.185) → fit-to-fly ReadinessVerdict per person × airframe class ×
+jurisdiction; both **not-fit and unknown block assignment** (reason distinguishes
+renew vs obtain). Duty/rest engine (DUOSAM OSO#17) gated to **specific-category**
+Dubai ops with a distinct `not-applicable` state (never amber for an uncovered
+pilot); OSO#17 numeric values remain a flagged open item (pending owner). Tables:
+`credentials`, `recency_events` (append-only; the **M6 flight seam** — source
+`m6_flight`), `duty_records`, `org_currency_rules`. Crew roster (readiness-pill
+dominant, filter/sort, ≤90 d expiry count, recency N/M denominator, no-wallet
+obligation) + person Drawer (Overview/Credentials/Recency/Duty/History) with the
+logged override path. **Next milestone: M5 Fleet.**
+
+**Then** (per v2 ordering): M5 Fleet · M6 Flight Evidence
 (DJI parser — flagged: real logs) · M4 Operations · M2 Compliance (coverage
 matrix + NCR/CAPA closing the deviation→finding loop) · M3 Safety & occurrence
 engine · P0 hardening (notifications, dogfood migration, offline PWA, QA pass).

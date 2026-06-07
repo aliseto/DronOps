@@ -7,6 +7,7 @@ import {
   Card,
   Checkbox,
   Combobox,
+  CurrencyChip,
   DataTable,
   DateField,
   Drawer,
@@ -16,6 +17,7 @@ import {
   Input,
   Modal,
   Radio,
+  ReadinessVerdict,
   Select,
   Skeleton,
   StatusPill,
@@ -115,8 +117,38 @@ function Showcase() {
         <StatusPill domain="ncr" status="open" />
         <StatusPill domain="asset" status="grounded" />
         <StatusPill domain="coverage" status="partial" />
+        <StatusPill domain="readiness" status="fit" />
+        <StatusPill domain="readiness" status="not-fit" />
         <Badge tone="accent">accent</Badge>
         <Badge tone="external">external</Badge>
+      </Section>
+
+      <Section title="Currency & readiness (M7)">
+        <Card className="w-80">
+          <ReadinessVerdict
+            verdict="caution"
+            blocksAssignment={false}
+            context="Multirotor · Saudi Arabia"
+            checks={[
+              { key: "c1", label: "Remote Pilot Certificate", status: "current", detail: "200 d to expiry", clause: "§107.63–85" },
+              { key: "c2", label: "Knowledge recency", status: "expiring", detail: "valid to 2026-07-30", clause: "§107.71" },
+              { key: "c3", label: "Operator recency (3/90 d)", status: "current", detail: "5/3 flights" },
+            ]}
+          />
+        </Card>
+        <Card className="w-80">
+          <ReadinessVerdict
+            verdict="unknown"
+            blocksAssignment
+            context="Multirotor · Oman"
+            checks={[
+              { key: "c4", label: "Remote Pilot certification", status: "unverified", detail: "Not on file", clause: "CAR-102 Subpart D" },
+              { key: "c5", label: "Medical certificate", status: "unverified", detail: "Not on file", clause: "CAR 102.185" },
+            ]}
+          />
+        </Card>
+        <CurrencyChip label="Medical" status="current" detail="142 d" />
+        <CurrencyChip label="RPC" status="expiring" detail="21 d" />
       </Section>
 
       <Section title="Inputs">
