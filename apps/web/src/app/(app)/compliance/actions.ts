@@ -5,7 +5,8 @@ import type { FindingStatus, TriageDecision } from "@dronops/shared";
 import { getCurrentUser } from "@/lib/session";
 import { getActiveOrgId } from "@/server/active-org";
 import { getCurrentPersonId } from "@/server/rbac";
-import { addCapaAction, transitionFinding, triageFinding } from "@/server/compliance";
+import { addCapaAction, transitionFinding, triageFinding, setCoverage, raiseFindingFromGap } from "@/server/compliance";
+import type { CoverageStatus } from "@dronops/shared";
 
 async function ctx() {
   const user = await getCurrentUser();
@@ -52,4 +53,23 @@ export async function addCapaActionAction(formData: FormData) {
   if (!findingId || !description.trim()) throw new Error("A description is required");
   await addCapaAction(c, { findingId, kind, description, ownerPersonId: str(formData.get("ownerPersonId")), dueAt: dt(formData.get("dueAt")) });
   revalidatePath(`/compliance/${findingId}`);
+}
+
+export async function setCoverageAction(formData: FormData) {
+  const c = await ctx();
+  const requirementRef = String(formData.get("requirementRef") ?? "");
+  const status = String(formData.get("status") ?? "") as CoverageStatus;
+  if (!requirementRef || !["covered", "partial", "gap", "n-a"].includes(status)) throw new Error("A coverage status is required");
+  const reviewedByPersonId = (await getCurrentPersonId(c.orgId, c.userId)) ?? undefined;
+  await setCoverage(c, requirementRef, { status, controllingDocumentId: str(formData.get("controllingDocumentId")), note: str(formData.get("note")), reviewedByPersonId });
+  revalidatePath("/compliance/coverage");
+}
+
+export async function raiseFindingFromGapAction(formData: FormData) {
+  const c = await ctx();
+  const requirementRef = String(formData.get("requirementRef") ?? "");
+  if (!requirementRef) throw new Error("A requirement is required");
+  await raiseFindingFromGap(c, requirementRef);
+  revalidatePath("/compliance/coverage");
+  revalidatePath("/compliance");
 }

@@ -205,7 +205,23 @@ REQUIRED for the signal-weakening outcomes (downgrade, false-positive), optional
 for accept, logged to audit always. Two-level disclosure: findings list + triage
 queue → finding drawer (evidence-inline triage) → full finding page (lifecycle,
 CAPA, SoD-guarded close, immutable-when-terminal). Migration 0017 applied.
-**Next: M2 coverage matrix (PR-026) · management review · M3 Safety.**
+
+**M2 Compliance — coverage matrix (PR-026)** — the QMS view (C-01/C-02) and the
+gap list audit packs are built from. `requirement_coverage` (org × requirement_ref
+→ covered/partial/gap/n-a + controlling document + note; unassessed → gap; living
+assessment, audited; migration 0018, upsert + per-tenant SQL-probed). Engine
+(@dronops/shared compliance/coverage): coverageByFramework + overallCoverage (n-a
+excluded from %, sorted most-gaps-first). **Two scoping paths are asymmetric**:
+coverage spans ALL enabled frameworks (UAE = CAR-UAC + DCAR-UAS + ISO, the
+operator's enablement choice — Dubai-based may enable DCAA only), while a MISSION
+binds ONE enabled REGULATOR layer (isRegulator/missionBindableJurisdictions — ISO
+never mission-gated; createMission enforces) and gates/duty derive from it
+(DUOSAM/OSO#17 only on UAE-Dubai high-tier). UI: /compliance gains a Findings |
+Coverage sub-nav; coverage = overall % + per-framework bars → matrix grouped by
+framework → assess drawer (status + controlling-document link + note). **Gap →
+audit finding** (raiseFindingFromGap: source='audit', idempotent) — the second
+inbound to the loop alongside flight deviations.
+**Next: M2 management review · audit packs · M3 Safety.**
 
 **Then** (per v2 ordering): M2 Compliance (coverage
 matrix + NCR/CAPA closing the deviation→finding loop) · M3 Safety & occurrence

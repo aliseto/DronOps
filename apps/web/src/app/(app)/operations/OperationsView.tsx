@@ -122,7 +122,16 @@ export function OperationsView({
         <Card title="New mission">
           <form action={createMissionAction} className="flex flex-wrap items-end gap-3" onSubmit={() => setTimeout(() => setAdding(false), 0)}>
             <label className="flex flex-col gap-1 text-small"><span className="text-fg-muted">Title *</span><Input name="title" required /></label>
-            <label className="flex flex-col gap-1 text-small"><span className="text-fg-muted">Jurisdiction *</span><Select name="jurisdiction" required options={jurisdictions.map((j) => ({ value: j, label: j }))} /></label>
+            {jurisdictions.length === 1 ? (
+              // Single-regulator tenant: the operative layer is fixed — bind it, no choice.
+              <label className="flex flex-col gap-1 text-small"><span className="text-fg-muted">Jurisdiction</span>
+                <input type="hidden" name="jurisdiction" value={jurisdictions[0]} />
+                <span className="rounded-md border border-default bg-bg-inset px-2.5 py-1.5 text-fg-secondary">{jurisdictions[0]}</span>
+              </label>
+            ) : (
+              // Multi-regulator (UAE): pick the mission's operative layer — federal vs emirate.
+              <label className="flex flex-col gap-1 text-small"><span className="text-fg-muted">Operative layer *</span><Select name="jurisdiction" required options={jurisdictions.map((j) => ({ value: j, label: j }))} /></label>
+            )}
             <label className="flex flex-col gap-1 text-small"><span className="text-fg-muted">Operational category *</span>
               <Select name="operationalCategory" required options={[{ value: "open", label: "Open" }, { value: "standard", label: "Standard" }, { value: "specific", label: "Specific" }, { value: "advanced", label: "Advanced" }]} />
             </label>

@@ -1,10 +1,12 @@
 import "server-only";
 import { and, desc, eq } from "drizzle-orm";
 import { getAdminDb, withTenant, type TenantCtx, type Tx } from "@dronops/db";
-import { auditEvents, capaActions, findings, persons, requirementCoverage } from "@dronops/db/schema";
-import { REQUIREMENTS } from "@dronops/content";
+import { auditEvents, capaActions, counters, findings, persons, requirementCoverage } from "@dronops/db/schema";
+import { REQUIREMENTS, getRequirement } from "@dronops/content";
+import { sql } from "drizzle-orm";
 import {
   applyTriage,
+  capaDueDate,
   findingTransition,
   allowedFindingTransitions,
   coverageByFramework,
@@ -266,5 +268,46 @@ export async function setCoverage(
         },
       });
     await audit(tx, ctx, { action: "requirement_coverage.set", entityType: "requirement_coverage", entityId: requirementRef, after: { status: input.status } });
+  });
+}
+
+/**
+ * Escalate a coverage gap to an audit finding (NCR, source = 'audit') — the other
+ * inbound to the M2 loop alongside flight deviations. Idempotent: skips if an
+ * open audit finding already exists for the requirement. Returns the finding code.
+ */
+export async function raiseFindingFromGap(ctx: TenantCtx, requirementRef: string): Promise<string> {
+  const req = getRequirement(requirementRef);
+  if (!req) throw new Error(`Unknown requirement: ${requirementRef}`);
+  return withTenant(getAdminDb(), ctx, async (tx) => {
+    const existing = await tx
+      .select({ code: findings.code })
+      .from(findings)
+      .where(and(eq(findings.orgId, ctx.orgId), eq(findings.source, "audit"), eq(findings.sourceRef, requirementRef)))
+      .limit(1);
+    if (existing.length > 0) return existing[0]!.code;
+
+    const [c] = await tx
+      .insert(counters)
+      .values({ orgId: ctx.orgId, key: "finding", value: 1 })
+      .onConflictDoUpdate({ target: [counters.orgId, counters.key], set: { value: sql`${counters.value} + 1`, updatedAt: new Date() } })
+      .returning({ value: counters.value });
+    const code = `NCR-${String(c!.value).padStart(3, "0")}`;
+    // A documentation/coverage gap defaults to minor; quality can drive it up.
+    const level = "minor" as const;
+    await tx.insert(findings).values({
+      orgId: ctx.orgId,
+      code,
+      jurisdiction: req.jurisdiction,
+      source: "audit",
+      sourceRef: requirementRef,
+      level,
+      status: "open",
+      title: `Coverage gap: ${req.title}`,
+      description: `${req.framework} ${req.clause} — ${req.summary}`,
+      dueAt: capaDueDate(req.jurisdiction, level, new Date()),
+    });
+    await audit(tx, ctx, { action: "finding.raise_from_gap", entityType: "finding", entityId: code, after: { requirementRef, framework: req.framework } });
+    return code;
   });
 }

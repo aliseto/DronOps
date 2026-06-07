@@ -3,6 +3,7 @@ import { getActiveOrgId } from "@/server/active-org";
 import { getCurrentPersonId, getPersonRoles } from "@/server/rbac";
 import { listFindings, getFindingDetail } from "@/server/compliance";
 import { ComplianceView } from "./ComplianceView";
+import { ComplianceTabs } from "./ComplianceTabs";
 
 export default async function CompliancePage({
   searchParams,
@@ -32,5 +33,10 @@ export default async function CompliancePage({
   const queue = findings.filter((f) => f.untriaged).length;
   const open = findings.filter((f) => !["closed", "false-positive"].includes(f.status)).length;
 
-  return <ComplianceView findings={findings} queueCount={queue} openCount={open} detail={detail} canTriage={canTriage} />;
+  return (
+    <div className="flex flex-col gap-4">
+      <ComplianceTabs active="findings" />
+      <ComplianceView findings={findings} queueCount={queue} openCount={open} detail={detail} canTriage={canTriage} />
+    </div>
+  );
 }
