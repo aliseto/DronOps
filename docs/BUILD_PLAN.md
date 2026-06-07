@@ -33,12 +33,18 @@ parallel spreadsheets.** Multi-tenant SaaS posture from PR-001.
   documents have their own status model (valid / review-due / expired by review
   date) and never enter the approval lifecycle.
 - **Oman (CAA) is in the jurisdiction set** (PR-016) — content frameworks
-  CAR-102 / CAR-47 (regulation) + AWR 033 (guidance), 72 requirements total;
+  CAR-102 / CAR-47 (regulation) + AWR 033 (guidance);
   occurrence deadlines immediate + 3-day, 122 m ceiling default, retention clause
   CAR 102.025(12). **M4 flag: Oman approval-basis = AWR 033 permit structure
   (type new/extension/renewal, permit no., per-location rows, window) + required
   green-zone confirmation (who/when) + standing media-attribution condition** —
   build with the M4 mission PRs. DRO-REG-001 v2.0 is the in-repo reference.
+- **ISO 9001 content addendum** (PR-017, seed `_iso_v1.2.sql`) — 20 clauses,
+  framework `ISO 9001` → jurisdiction `ISO`, kind `standard` (added to the kind
+  enum: ISO is a standard, not a regulator). Summaries are paraphrases — ISO
+  holds copyright in the text. Total content is now **92 requirement objects
+  across 9 framework strings**; the count test asserts the parsed number, so a
+  bad regeneration fails CI rather than drifting.
 
 ## 1. Phase 0 — canonical PR sequence (as built)
 

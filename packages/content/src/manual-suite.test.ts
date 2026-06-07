@@ -25,10 +25,22 @@ describe("manual-suite pipeline", () => {
     expect(missing).toEqual(["postholders.accountable_manager"]);
   });
 
-  it("renders only enabled jurisdiction blocks", () => {
-    const body = "[[juris:KSA]]KSA block[[/juris]][[juris:IDN]]IDN block[[/juris]]";
-    expect(renderManualBody(body, params, ["KSA"]).rendered).toBe("KSA block");
+  it("renders only enabled jurisdiction blocks (incl. UAE alias + OR list)", () => {
+    const body =
+      "[[jurisdiction:KSA]]KSA[[/jurisdiction]][[jurisdiction:IDN]]IDN[[/jurisdiction]]";
+    expect(renderManualBody(body, params, ["KSA"]).rendered).toBe("KSA");
     expect(renderManualBody(body, params, []).rendered).toBe("");
+    // 'UAE' alias expands to either UAE key; '+' is an OR list
+    const uae = "[[jurisdiction:UAE-Federal+UAE-Dubai]]UAE[[/jurisdiction]]";
+    expect(renderManualBody(uae, params, ["UAE-Dubai"]).rendered).toBe("UAE");
+    expect(renderManualBody("[[jurisdiction:UAE]]X[[/jurisdiction]]", params, ["UAE-Federal"]).rendered).toBe("X");
+  });
+
+  it("strips the legend comment and unwraps [[param:…]] blocks", () => {
+    const body = "<!-- legend {{a.b}} -->[[param:thresholds.x | note]]keep {{organization.legal_name}}[[/param]]";
+    const { rendered, missing } = renderManualBody(body, params, []);
+    expect(rendered).toBe("keep Acme FZ LLC");
+    expect(missing).toEqual([]); // comment example token not counted
   });
 
   it("filters conditional docs by scope (solar PV / dock excluded)", () => {

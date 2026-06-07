@@ -6,6 +6,7 @@ import { ac10701 } from "./ac10701";
 import { car102 } from "./car102";
 import { car47 } from "./car47";
 import { awr033 } from "./awr033";
+import { iso9001 } from "./iso9001";
 import { requirementSchema, type RequirementDef } from "./types";
 
 // Expected derivation per framework (kind + jurisdiction). Asserted at load so
@@ -19,10 +20,11 @@ const DERIVATION: Record<string, { kind: RequirementDef["kind"]; jurisdiction: s
   "CAR-102": { kind: "regulation", jurisdiction: "Oman" },
   "CAR-47": { kind: "regulation", jurisdiction: "Oman" },
   "CAA AWR 033": { kind: "guidance", jurisdiction: "Oman" },
+  "ISO 9001": { kind: "standard", jurisdiction: "ISO" },
 };
 
 function load(): RequirementDef[] {
-  const all = [...caruac, ...dcar, ...gacar107, ...gacar48, ...ac10701, ...car102, ...car47, ...awr033];
+  const all = [...caruac, ...dcar, ...gacar107, ...gacar48, ...ac10701, ...car102, ...car47, ...awr033, ...iso9001];
   const seen = new Set<string>();
   for (const r of all) {
     requirementSchema.parse(r); // shape + record-type vocabulary

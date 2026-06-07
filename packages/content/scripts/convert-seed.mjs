@@ -10,10 +10,11 @@ const repoRoot = join(here, "..", "..", "..");
 const seedPaths = [
   join(repoRoot, "docs", "dronops_requirements_seed.sql"),
   join(repoRoot, "docs", "dronops_requirements_seed_oman_v1.1.sql"), // Oman addendum
+  join(repoRoot, "docs", "dronops_requirements_seed_iso_v1.2.sql"), // ISO 9001 addendum
 ];
 const outDir = join(here, "..", "src", "requirements");
 
-const SEED_VERSION = "v1.0 + Oman v1.1 (2026-06-07)";
+const SEED_VERSION = "v1.0 + Oman v1.1 + ISO v1.2 (2026-06-07)";
 
 // framework -> { file, jurisdiction, kind }  (derivation rules per owner spec)
 const FRAMEWORKS = {
@@ -26,6 +27,8 @@ const FRAMEWORKS = {
   "CAR-102": { file: "car102", jurisdiction: "Oman", kind: "regulation" },
   "CAR-47": { file: "car47", jurisdiction: "Oman", kind: "regulation" },
   "CAA AWR 033": { file: "awr033", jurisdiction: "Oman", kind: "guidance" },
+  // ISO 9001 addendum v1.2 — a standard, not a regulator
+  "ISO 9001": { file: "iso9001", jurisdiction: "ISO", kind: "standard" },
 };
 
 const body = seedPaths
