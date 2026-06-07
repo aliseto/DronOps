@@ -13,3 +13,4 @@ export * from "./signatures";
 export * from "./documents";
 export * from "./document-distributions";
 export * from "./form-templates";
+export * from "./org-template-params";

@@ -197,6 +197,9 @@ export function DocumentsView({
           )}
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/documents/manual-suite">
+            <Button variant="secondary">Load manual suite</Button>
+          </Link>
           <Link href="/documents/forms">
             <Button variant="secondary">Form templates</Button>
           </Link>

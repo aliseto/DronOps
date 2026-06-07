@@ -103,12 +103,16 @@ numbers assigned as each PR opens.
   active/retired immutable), instances pin version (hard rule 6), field types
   incl. photo/GPS/signature, conditional sections, bilingual labels, FormRenderer
   (D-05).
-- PR-015 Manual-suite pre-load (D-04) — schema + onboarding wizard + preload
-  manifest + stub-body rendering; verbatim bodies a later content PR. Per spec
-  v1.1: bid bands, structured pilot recency rule, RBAC vs text-only postholders,
-  legal-register → platform-module pointer, jurisdiction-conditional rendering.
+- PR-015 Manual-suite pre-load (D-04) ✅ — parameter schema + onboarding wizard +
+  preload manifest + **stub-body rendering pipeline** (verbatim bodies land as a
+  later content commit — the stub-first acceptance test). Per spec v1.1: bid
+  bands, structured pilot recency rule, RBAC vs text-only postholders,
+  legal-register → platform-module pointer, jurisdiction-conditional rendering,
+  legacy numbering carry-in, drafts-only re-run, scope-conditional SOPs.
   **Flag: Indonesia (DGCA PM 37/2020) content pack is a future task — no `IDN`
   jurisdiction mode yet, so FOM DGCA blocks gate on it and don't render today.**
+
+**M1 Documents is complete (PR-012–015).** Next milestone: M7 Personnel & Crew.
 
 **Then** (per v2 ordering): M7 Personnel & Crew · M5 Fleet · M6 Flight Evidence
 (DJI parser — flagged: real logs) · M4 Operations · M2 Compliance (coverage
