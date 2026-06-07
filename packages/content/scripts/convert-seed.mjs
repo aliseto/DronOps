@@ -14,7 +14,13 @@ const seedPaths = [
 ];
 const outDir = join(here, "..", "src", "requirements");
 
-const SEED_VERSION = "v1.0 + Oman v1.1 + ISO v1.2 (2026-06-07)";
+const SEED_VERSION = "v1.0 + Oman v1.1 + ISO v1.2 + category re-tag v1.3 (2026-06-07)";
+
+// Operational-category re-tag (v1.3): adds category_native + risk_tier per
+// requirement so the M2/M4 engine never mixes high-risk-operation requirements
+// with standard/low-risk ones. Parsed from the SQL UPDATE statements; every row
+// MUST end up tagged (asserted below) — an untagged id is a re-tag bug.
+const retagPath = join(repoRoot, "docs", "dronops_operational_category_retag_v1.3.sql");
 
 // framework -> { file, jurisdiction, kind }  (derivation rules per owner spec)
 const FRAMEWORKS = {
@@ -121,6 +127,28 @@ const unquote = (s) => s.slice(1, -1).replace(/''/g, "'");
 const parseArray = (s) =>
   splitFields(s.slice(s.indexOf("[") + 1, s.lastIndexOf("]"))).map(unquote);
 
+// Parse the v1.3 re-tag UPDATE statements into id- and framework-keyed maps.
+const retagSql = readFileSync(retagPath, "utf8");
+const retagById = new Map(); // id -> { riskTier, categoryNative }
+const retagByFramework = new Map(); // framework -> { riskTier, categoryNative }
+for (const m of retagSql.matchAll(/update\s+requirement_defs\s+set([\s\S]*?);/gi)) {
+  const stmt = m[1];
+  const tierM = stmt.match(/risk_tier\s*=\s*'([^']+)'/i);
+  const natM = stmt.match(/category_native\s*=\s*'((?:[^']|'')*)'/i);
+  if (!tierM || !natM) continue;
+  const tag = { riskTier: tierM[1], categoryNative: natM[1].replace(/''/g, "'") };
+  const idsM = stmt.match(/where\s+id\s+in\s*\(([\s\S]*?)\)/i);
+  if (idsM) {
+    for (const idm of idsM[1].matchAll(/'((?:[^']|'')*)'/g)) {
+      retagById.set(idm[1].replace(/''/g, "'"), tag);
+    }
+    continue;
+  }
+  const fwM = stmt.match(/where\s+framework\s*=\s*'((?:[^']|'')*)'/i);
+  if (fwM) retagByFramework.set(fwM[1].replace(/''/g, "'"), tag);
+}
+const tagFor = (row) => retagById.get(row.id) ?? retagByFramework.get(row.framework);
+
 const rows = parseTuples(body)
   .map((t) => t.trim())
   .filter((t) => t.startsWith("'"))
@@ -139,9 +167,14 @@ const rows = parseTuples(body)
   });
 
 const byFile = {};
+const tierCounts = { baseline: 0, low: 0, high: 0, management_system: 0 };
 for (const r of rows) {
   const fw = FRAMEWORKS[r.framework];
   if (!fw) throw new Error(`Unknown framework (no derivation rule): ${r.framework}`);
+  const tag = tagFor(r);
+  if (!tag) throw new Error(`No risk_tier/category_native for ${r.id} (re-tag v1.3 gap)`);
+  if (!(tag.riskTier in tierCounts)) throw new Error(`Unknown risk_tier '${tag.riskTier}' for ${r.id}`);
+  tierCounts[tag.riskTier]++;
   (byFile[fw.file] ??= []).push({
     id: r.id,
     framework: r.framework,
@@ -152,6 +185,8 @@ for (const r of rows) {
     version: r.version,
     kind: fw.kind,
     jurisdiction: fw.jurisdiction,
+    categoryNative: tag.categoryNative,
+    riskTier: tag.riskTier,
   });
 }
 
@@ -171,3 +206,6 @@ ${lines}
   console.log(`${file}.ts: ${defs.length}`);
 }
 console.log(`total: ${rows.length}`);
+console.log(
+  `risk_tier: baseline ${tierCounts.baseline} · low ${tierCounts.low} · high ${tierCounts.high} · management_system ${tierCounts.management_system}`,
+);

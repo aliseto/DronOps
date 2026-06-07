@@ -56,4 +56,14 @@ export function requirementsByFramework(framework: string): RequirementDef[] {
   return REQUIREMENTS.filter((r) => r.framework === framework);
 }
 
-export { type RequirementDef, type RecordType, RECORD_TYPES } from "./types";
+export function requirementsByRiskTier(riskTier: RequirementDef["riskTier"]): RequirementDef[] {
+  return REQUIREMENTS.filter((r) => r.riskTier === riskTier);
+}
+
+export {
+  type RequirementDef,
+  type RecordType,
+  RECORD_TYPES,
+  type RiskTier,
+  RISK_TIERS,
+} from "./types";
