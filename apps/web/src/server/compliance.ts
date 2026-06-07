@@ -1,14 +1,21 @@
 import "server-only";
 import { and, desc, eq } from "drizzle-orm";
 import { getAdminDb, withTenant, type TenantCtx, type Tx } from "@dronops/db";
-import { auditEvents, capaActions, findings, persons } from "@dronops/db/schema";
+import { auditEvents, capaActions, counters, findings, persons, requirementCoverage } from "@dronops/db/schema";
+import { REQUIREMENTS, getRequirement } from "@dronops/content";
+import { sql } from "drizzle-orm";
 import {
   applyTriage,
+  capaDueDate,
   findingTransition,
   allowedFindingTransitions,
+  coverageByFramework,
+  overallCoverage,
+  type CoverageStatus,
   type FindingStatus,
   type TriageDecision,
 } from "@dronops/shared";
+import { listEnabledJurisdictions } from "./org";
 
 async function audit(
   tx: Tx,
@@ -172,5 +179,135 @@ export async function addCapaAction(
       dueAt: input.dueAt,
     });
     await audit(tx, ctx, { action: "capa_action.add", entityType: "finding", entityId: input.findingId, after: { kind: input.kind } });
+  });
+}
+
+// ───────────────────────────────────────────── requirement coverage matrix (C-01/02)
+export interface CoverageRequirementRow {
+  requirementRef: string;
+  framework: string;
+  jurisdiction: string;
+  clause: string;
+  title: string;
+  riskTier: string;
+  status: CoverageStatus;
+  controllingDocumentId: string | null;
+  note: string | null;
+}
+
+export interface CoverageMatrix {
+  totals: ReturnType<typeof overallCoverage>;
+  frameworks: ReturnType<typeof coverageByFramework>;
+  rows: CoverageRequirementRow[];
+}
+
+/**
+ * The coverage matrix for the org's enabled jurisdictions. Requirements come from
+ * content (REQUIREMENTS); assessments come from requirement_coverage; an
+ * unassessed requirement defaults to `gap`.
+ */
+export async function getCoverageMatrix(orgId: string): Promise<CoverageMatrix> {
+  const enabled = new Set(await listEnabledJurisdictions(orgId));
+  const reqs = REQUIREMENTS.filter((r) => enabled.has(r.jurisdiction));
+  const assessedRows = await getAdminDb()
+    .select()
+    .from(requirementCoverage)
+    .where(eq(requirementCoverage.orgId, orgId));
+  const byRef = new Map(assessedRows.map((a) => [a.requirementRef, a]));
+  const assessed = new Map<string, CoverageStatus>(assessedRows.map((a) => [a.requirementRef, a.status]));
+
+  const rows: CoverageRequirementRow[] = reqs.map((r) => {
+    const a = byRef.get(r.id);
+    return {
+      requirementRef: r.id,
+      framework: r.framework,
+      jurisdiction: r.jurisdiction,
+      clause: r.clause,
+      title: r.title,
+      riskTier: r.riskTier,
+      status: (a?.status as CoverageStatus) ?? "gap",
+      controllingDocumentId: a?.controllingDocumentId ?? null,
+      note: a?.note ?? null,
+    };
+  });
+
+  return {
+    totals: overallCoverage(reqs, assessed),
+    frameworks: coverageByFramework(reqs, assessed),
+    rows,
+  };
+}
+
+/** Assert (upsert) a requirement's coverage. Living assessment, audited. */
+export async function setCoverage(
+  ctx: TenantCtx,
+  requirementRef: string,
+  input: { status: CoverageStatus; controllingDocumentId?: string; note?: string; reviewedByPersonId?: string },
+) {
+  return withTenant(getAdminDb(), ctx, async (tx) => {
+    await tx
+      .insert(requirementCoverage)
+      .values({
+        orgId: ctx.orgId,
+        requirementRef,
+        status: input.status,
+        controllingDocumentId: input.controllingDocumentId,
+        note: input.note,
+        reviewedByPersonId: input.reviewedByPersonId,
+        reviewedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [requirementCoverage.orgId, requirementCoverage.requirementRef],
+        set: {
+          status: input.status,
+          controllingDocumentId: input.controllingDocumentId,
+          note: input.note,
+          reviewedByPersonId: input.reviewedByPersonId,
+          reviewedAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+    await audit(tx, ctx, { action: "requirement_coverage.set", entityType: "requirement_coverage", entityId: requirementRef, after: { status: input.status } });
+  });
+}
+
+/**
+ * Escalate a coverage gap to an audit finding (NCR, source = 'audit') — the other
+ * inbound to the M2 loop alongside flight deviations. Idempotent: skips if an
+ * open audit finding already exists for the requirement. Returns the finding code.
+ */
+export async function raiseFindingFromGap(ctx: TenantCtx, requirementRef: string): Promise<string> {
+  const req = getRequirement(requirementRef);
+  if (!req) throw new Error(`Unknown requirement: ${requirementRef}`);
+  return withTenant(getAdminDb(), ctx, async (tx) => {
+    const existing = await tx
+      .select({ code: findings.code })
+      .from(findings)
+      .where(and(eq(findings.orgId, ctx.orgId), eq(findings.source, "audit"), eq(findings.sourceRef, requirementRef)))
+      .limit(1);
+    if (existing.length > 0) return existing[0]!.code;
+
+    const [c] = await tx
+      .insert(counters)
+      .values({ orgId: ctx.orgId, key: "finding", value: 1 })
+      .onConflictDoUpdate({ target: [counters.orgId, counters.key], set: { value: sql`${counters.value} + 1`, updatedAt: new Date() } })
+      .returning({ value: counters.value });
+    const code = `NCR-${String(c!.value).padStart(3, "0")}`;
+    // A documentation/coverage gap defaults to minor; quality can drive it up.
+    const level = "minor" as const;
+    await tx.insert(findings).values({
+      orgId: ctx.orgId,
+      code,
+      jurisdiction: req.jurisdiction,
+      source: "audit",
+      sourceRef: requirementRef,
+      level,
+      status: "open",
+      title: `Coverage gap: ${req.title}`,
+      description: `${req.framework} ${req.clause} — ${req.summary}`,
+      dueAt: capaDueDate(req.jurisdiction, level, new Date()),
+    });
+    await audit(tx, ctx, { action: "finding.raise_from_gap", entityType: "finding", entityId: code, after: { requirementRef, framework: req.framework } });
+    return code;
   });
 }

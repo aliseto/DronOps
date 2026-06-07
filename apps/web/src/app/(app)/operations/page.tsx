@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/session";
 import { getActiveOrgId } from "@/server/active-org";
 import { getCurrentPersonId, getPersonRoles } from "@/server/rbac";
 import { listEnabledJurisdictions } from "@/server/org";
+import { missionBindableJurisdictions } from "@dronops/content";
 import { listFleet } from "@/server/fleet";
 import { listMissions, getMissionDetail } from "@/server/operations";
 import { allowedTransitions, type MissionState } from "@dronops/shared";
@@ -27,7 +28,9 @@ export default async function OperationsPage({
     if (orgId) {
       missions = await listMissions(orgId);
       aircraftOptions = (await listFleet(orgId)).map((a) => ({ id: a.id, label: a.label }));
-      jurisdictions = await listEnabledJurisdictions(orgId);
+      // A mission binds one operative REGULATOR layer (federal vs emirate for
+      // UAE); ISO and other standards are never mission-gated.
+      jurisdictions = missionBindableJurisdictions(await listEnabledJurisdictions(orgId));
       const personId = user?.id ? await getCurrentPersonId(orgId, user.id) : null;
       roles = personId ? await getPersonRoles(orgId, personId) : [];
       if (id) {

@@ -59,15 +59,31 @@ export const JURISDICTIONS: Record<JurisdictionKey, JurisdictionDef> = {
 export const isJurisdictionKey = (v: string): v is JurisdictionKey =>
   (JURISDICTION_KEYS as readonly string[]).includes(v);
 
+/**
+ * A mission binds exactly ONE operative regulator layer (Hard Rule 3) — never a
+ * `standard` like ISO (management_system, never mission-gated). For a UAE tenant
+ * this yields GCAA-federal + DCAA-Dubai (the per-mission federal-vs-emirate
+ * choice); for a single-regulator tenant it collapses to one. Coverage, by
+ * contrast, spans ALL enabled frameworks (incl. ISO).
+ */
+export const isRegulator = (key: string): boolean =>
+  isJurisdictionKey(key) && JURISDICTIONS[key].kind === "regulator";
+
+/** The mission-bindable regulator layers among the org's enabled frameworks. */
+export const missionBindableJurisdictions = (enabled: readonly string[]): string[] =>
+  enabled.filter(isRegulator);
+
 export interface JurisdictionAdvisory {
   level: "advisory";
   message: string;
 }
 
 /**
- * Cross-jurisdiction advisories (NOT blocks). DRO-REG-001 §1.2: a Dubai
- * operator almost always also carries the federal GCAA obligation, so enabling
- * UAE-Dubai without UAE-Federal surfaces an advisory to enable Federal too.
+ * Cross-jurisdiction advisories (NOT blocks). DRO-REG-001 §1.2: a Dubai operator
+ * may operate under DCAA alone, but aircraft registration & airworthiness remain
+ * federal (GCAA owns the nationwide registry). So enabling UAE-Dubai without
+ * UAE-Federal surfaces an advisory — for the registration/airworthiness underlay,
+ * NOT an operational federal obligation.
  */
 export function jurisdictionAdvisories(enabled: readonly string[]): JurisdictionAdvisory[] {
   const set = new Set(enabled);
@@ -76,7 +92,7 @@ export function jurisdictionAdvisories(enabled: readonly string[]): Jurisdiction
     out.push({
       level: "advisory",
       message:
-        "Most Dubai operators also carry the federal GCAA obligation (CAR-UAC). Consider enabling UAE — Federal as well.",
+        "Dubai operations are authorized by DCAA, but aircraft registration & airworthiness stay federal (GCAA, nationwide). If you hold GCAA-registered aircraft, consider enabling UAE — Federal for registration tracking.",
     });
   }
   return out;
