@@ -9,11 +9,18 @@ import { myAcksDue } from "@/server/distributions";
 export default async function DashboardPage() {
   const t = await getTranslations("pages.dashboard");
   const user = await getCurrentUser();
-  const orgId = user?.id ? await getActiveOrgId(user.id) : null;
-  const personId = orgId && user?.id ? await getCurrentPersonId(orgId, user.id) : null;
 
   // Personal obligations (UX_SYSTEM §1.3) — my acks due, not org totals.
-  const acksDue = orgId && personId ? await myAcksDue(orgId, personId) : [];
+  // Best-effort: the dashboard must still render if the data layer is
+  // unavailable (e.g. no DB configured), so it degrades to no obligations.
+  let acksDue: Awaited<ReturnType<typeof myAcksDue>> = [];
+  try {
+    const orgId = user?.id ? await getActiveOrgId(user.id) : null;
+    const personId = orgId && user?.id ? await getCurrentPersonId(orgId, user.id) : null;
+    if (orgId && personId) acksDue = await myAcksDue(orgId, personId);
+  } catch {
+    acksDue = [];
+  }
 
   return (
     <>
