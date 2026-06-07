@@ -112,9 +112,17 @@ export async function getFindingDetail(orgId: string, id: string): Promise<Findi
   };
 }
 
-/** Triage an auto-raised finding (C-04). Reason required and logged. */
+/**
+ * Triage an auto-raised finding (C-04). A reason is REQUIRED for the two
+ * signal-weakening outcomes (downgrade, false-positive) and optional for accept
+ * (the system already judged it); the reason is written to the audit trail in
+ * all cases. false-positive is terminal + immutable (enforce_finding_terminal).
+ */
 export async function triageFinding(ctx: TenantCtx, id: string, decision: TriageDecision, reason: string) {
-  if (!reason.trim()) throw new Error("Triage requires a reason");
+  const trimmed = reason.trim();
+  if ((decision === "downgrade" || decision === "false-positive") && !trimmed) {
+    throw new Error("A reason is required to downgrade or dismiss a finding");
+  }
   return withTenant(getAdminDb(), ctx, async (tx) => {
     const [f] = await tx.select().from(findings).where(and(eq(findings.orgId, ctx.orgId), eq(findings.id, id))).limit(1);
     if (!f) throw new Error("finding not found");
@@ -122,9 +130,9 @@ export async function triageFinding(ctx: TenantCtx, id: string, decision: Triage
     const patch = applyTriage(decision, f.level as "major" | "minor" | "observation");
     await tx
       .update(findings)
-      .set({ level: patch.level, status: patch.status ?? f.status, triagedAt: new Date(), triageDecision: decision, triageReason: reason.trim(), updatedAt: new Date() })
+      .set({ level: patch.level, status: patch.status ?? f.status, triagedAt: new Date(), triageDecision: decision, triageReason: trimmed || null, updatedAt: new Date() })
       .where(eq(findings.id, id));
-    await audit(tx, ctx, { action: "finding.triage", entityType: "finding", entityId: id, before: { level: f.level, status: f.status }, after: { decision, level: patch.level } });
+    await audit(tx, ctx, { action: "finding.triage", entityType: "finding", entityId: id, before: { level: f.level, status: f.status }, after: { decision, level: patch.level, reason: trimmed || null } });
   });
 }
 
