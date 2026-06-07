@@ -11,6 +11,8 @@ out/
 
 # test artifacts
 coverage/
+# …but NOT the M2 coverage-matrix route (folder name collides with the rule above)
+!apps/web/src/app/**/compliance/coverage/
 playwright-report/
 test-results/
 blob-report/
