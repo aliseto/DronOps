@@ -163,9 +163,26 @@ engine `flightDeviations` (ceiling exceedance vs CEILING_DEFAULT_M, low-battery)
 flight Drawer (Telemetry / Deviations / History) with reconcile (computes
 deviations) + seal. **Seams kept as-is**: deviation→NCR/CAPA auto-raise lands
 with M2/M3; recency/duty block-time wiring into M7 stays "awaiting M6" until
-real-log validation. **Next milestone: M4 Operations.**
+real-log validation.
 
-**Then** (per v2 ordering): M4 Operations · M2 Compliance (coverage
+**M4 Operations (PR-023)** — the keystone. A mission binds one jurisdiction + one
+operationalCategory (the input the no-mixing requirement gate AND the
+duty-applicability gate read). Approval lifecycle on the same record (DronOps is
+the system of record, NOT the approval system): planning → submitted_for_approval
+→ approval_in_progress → approved → ready → flown (+ rejected/withdrawn off-ramps).
+Roles: operations_team (plan→submit + ops steps), approval_admin (the
+authority-facing submit→approved; records application ref/authority + uploads the
+returned approval). Document flows: inbound (AOI KML→permitted-locations, client
+docs at planning), outbound (approval/permit at approved). The **crew currency +
+duty gate** (missionReadiness composing fitToFly + dutyProjection) activates at
+approved → ready — **this flips the M7 duty coverage from the org-level proxy to
+per-assignment** (specific/advanced = OSO#17 applies). Oman approval-basis = AWR
+033 permit + per-location rows + green-zone confirmation + media-attribution.
+Two-level disclosure: missions list → triage **drawer** (status, basis summary,
+crew-gate verdict, what's blocking) → full mission **page**. Block→override→audit
+journey covered in operations/engine.test. **Next milestone: M2 Compliance.**
+
+**Then** (per v2 ordering): M2 Compliance (coverage
 matrix + NCR/CAPA closing the deviation→finding loop) · M3 Safety & occurrence
 engine · P0 hardening (notifications, dogfood migration, offline PWA, QA pass).
 ✅ **30-day clock starts** at the end of hardening.
