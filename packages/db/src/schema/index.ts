@@ -12,3 +12,4 @@ export * from "./files";
 export * from "./signatures";
 export * from "./documents";
 export * from "./document-distributions";
+export * from "./form-templates";

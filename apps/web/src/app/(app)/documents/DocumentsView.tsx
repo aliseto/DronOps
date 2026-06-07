@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import {
   Badge,
@@ -195,7 +196,12 @@ export function DocumentsView({
             </p>
           )}
         </div>
-        <Button onClick={() => setNewOpen(true)}>New document</Button>
+        <div className="flex items-center gap-2">
+          <Link href="/documents/forms">
+            <Button variant="secondary">Form templates</Button>
+          </Link>
+          <Button onClick={() => setNewOpen(true)}>New document</Button>
+        </div>
       </div>
 
       <div className="p-6">
