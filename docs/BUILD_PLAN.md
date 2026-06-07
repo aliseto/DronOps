@@ -180,7 +180,15 @@ per-assignment** (specific/advanced = OSO#17 applies). Oman approval-basis = AWR
 033 permit + per-location rows + green-zone confirmation + media-attribution.
 Two-level disclosure: missions list → triage **drawer** (status, basis summary,
 crew-gate verdict, what's blocking) → full mission **page**. Block→override→audit
-journey covered in operations/engine.test. **Next milestone: M2 Compliance.**
+journey covered in operations/engine.test.
+
+**M4 activity thread (PR-024)** — the history Timeline made writable: an
+append-only operational log (NOT chat) per mission, interleaving manual notes
+(author + body + optional content-addressed attachment) with the mission's own
+audit events. `mission_notes` (append-only by trigger); `interleaveActivity` pure
+helper (newest-first, drops the note_added twin). Composer on the full page +
+latest-note/count in the triage drawer. Async only — no real-time/threading/
+reactions/mentions. **Next milestone: M2 Compliance.**
 
 **Then** (per v2 ordering): M2 Compliance (coverage
 matrix + NCR/CAPA closing the deviation→finding loop) · M3 Safety & occurrence

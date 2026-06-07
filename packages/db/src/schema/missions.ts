@@ -154,3 +154,29 @@ export const missionDocuments = pgTable(
     ...tenantPolicies("mission_documents"),
   ],
 ).enableRLS();
+
+/**
+ * Mission activity thread — the history Timeline made writable. An append-only
+ * operational log (NOT a chat): manual notes authored by ops_team / approval_admin,
+ * interleaved at read time with the mission's own audit events. Optional content-
+ * addressed file attachment (e.g. the authority's response letter). No edit/delete
+ * (enforced by trigger), consistent with the audit ethos.
+ */
+export const missionNotes = pgTable(
+  "mission_notes",
+  {
+    id: primaryId(),
+    orgId: orgId(),
+    missionId: uuid("mission_id")
+      .notNull()
+      .references(() => missions.id),
+    authorPersonId: uuid("author_person_id").references(() => persons.id),
+    body: text("body").notNull(),
+    fileId: uuid("file_id"),
+    ...timestamps(),
+  },
+  (t) => [
+    index("mission_notes_org_mission_idx").on(t.orgId, t.missionId),
+    ...tenantPolicies("mission_notes"),
+  ],
+).enableRLS();

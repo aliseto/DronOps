@@ -9,6 +9,7 @@ import { uploadEvidence } from "@/server/files";
 import {
   addLocation,
   addMissionDocument,
+  addMissionNote,
   assignCrew,
   confirmGreenZone,
   createMission,
@@ -138,6 +139,24 @@ export async function addInboundDocumentAction(formData: FormData) {
   const bytes = new Uint8Array(await file.arrayBuffer());
   const { file: stored } = await uploadEvidence(c, { sha256: await sha256Hex(bytes), bytes, mime: file.type || "application/octet-stream", size: file.size, name: file.name, grade: "manual" });
   await addMissionDocument(c, { missionId, fileId: stored.id, flow: "inbound", kind: str(formData.get("kind")) ?? "client_doc", label: file.name });
+  revalidatePath("/operations");
+}
+
+export async function addMissionNoteAction(formData: FormData) {
+  const c = await ctx();
+  const missionId = String(formData.get("missionId") ?? "");
+  const body = String(formData.get("body") ?? "").trim();
+  if (!missionId || !body) throw new Error("A note body is required");
+  const authorPersonId = (await getCurrentPersonId(c.orgId, c.userId)) ?? undefined;
+  let fileId: string | undefined;
+  const file = formData.get("file");
+  if (file instanceof File && file.size > 0) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const { file: stored } = await uploadEvidence(c, { sha256: await sha256Hex(bytes), bytes, mime: file.type || "application/octet-stream", size: file.size, name: file.name, grade: "manual" });
+    fileId = stored.id;
+  }
+  await addMissionNote(c, { missionId, body, authorPersonId, fileId });
+  revalidatePath(`/operations/${missionId}`);
   revalidatePath("/operations");
 }
 

@@ -209,6 +209,18 @@ function TriageDrawer({ detail, transitions, onClose }: { detail: MissionDetail;
         </div>
       )}
 
+      <div className="mt-3 border-t border-subtle pt-3">
+        <span className="text-micro text-fg-muted">Activity{detail.notes.count ? ` · ${detail.notes.count} note${detail.notes.count === 1 ? "" : "s"}` : ""}</span>
+        {detail.notes.latest ? (
+          <div className="mt-1 text-small">
+            <span className="text-fg-primary">{detail.notes.latest.body}</span>
+            <span className="block text-micro text-fg-muted">{detail.notes.latest.author} · {detail.notes.latest.at.slice(0, 16).replace("T", " ")}</span>
+          </div>
+        ) : (
+          <p className="mt-1 text-small text-fg-muted">No notes yet.</p>
+        )}
+      </div>
+
       {m.jurisdiction === "Oman" && (
         <div className="mt-3 flex flex-col gap-1 text-micro">
           <span className="text-fg-muted">Standing conditions</span>

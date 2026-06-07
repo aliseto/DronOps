@@ -10,6 +10,7 @@ import {
   missionCrew,
   missionDocuments,
   missionLocations,
+  missionNotes,
   missions,
   orgCurrencyRules,
   persons,
@@ -21,8 +22,10 @@ import {
 } from "@dronops/content";
 import { parseKml } from "@dronops/parsers";
 import {
+  interleaveActivity,
   missionReadiness,
   transitionFor,
+  type ActivityEntry,
   type CrewMemberInput,
   type MissionState,
   type OperationalCategory,
@@ -198,6 +201,7 @@ export interface MissionDetail {
   };
   locations: { id: string; governorate: string | null; wilayat: string | null; village: string | null; latitude: number | null; longitude: number | null; ceilingM: number | null }[];
   documents: { id: string; flow: string; kind: string; label: string | null; fileId: string; createdAt: string }[];
+  notes: { count: number; latest: { author: string; body: string; at: string } | null };
 }
 
 export async function getMissionDetail(orgId: string, id: string): Promise<MissionDetail | null> {
@@ -210,11 +214,19 @@ export async function getMissionDetail(orgId: string, id: string): Promise<Missi
     aircraftLabel = a?.label ?? null;
   }
   const r = await readinessFor(orgId, m);
-  const [locs, docs, crewRows] = await Promise.all([
+  const [locs, docs, crewRows, noteRows] = await Promise.all([
     db.select().from(missionLocations).where(and(eq(missionLocations.orgId, orgId), eq(missionLocations.missionId, id))),
     db.select().from(missionDocuments).where(and(eq(missionDocuments.orgId, orgId), eq(missionDocuments.missionId, id))).orderBy(desc(missionDocuments.createdAt)),
     db.select().from(missionCrew).where(and(eq(missionCrew.orgId, orgId), eq(missionCrew.missionId, id))),
+    db.select().from(missionNotes).where(and(eq(missionNotes.orgId, orgId), eq(missionNotes.missionId, id))).orderBy(desc(missionNotes.createdAt)),
   ]);
+  let latestNote: MissionDetail["notes"]["latest"] = null;
+  if (noteRows[0]) {
+    const a = noteRows[0].authorPersonId
+      ? (await db.select({ name: persons.name }).from(persons).where(eq(persons.id, noteRows[0].authorPersonId)).limit(1))[0]?.name
+      : null;
+    latestNote = { author: a ?? "Unknown", body: noteRows[0].body, at: noteRows[0].createdAt.toISOString() };
+  }
   const crewIdByKey = new Map(crewRows.map((c) => [`${c.personId}|${c.role}`, c.id]));
   const counts = { baseline: 0, high: 0, low: 0 };
   for (const req of r.applicableRequirements) {
@@ -268,7 +280,66 @@ export async function getMissionDetail(orgId: string, id: string): Promise<Missi
     },
     locations: locs.map((l) => ({ id: l.id, governorate: l.governorate, wilayat: l.wilayat, village: l.village, latitude: num(l.latitude), longitude: num(l.longitude), ceilingM: num(l.ceilingM) })),
     documents: docs.map((d) => ({ id: d.id, flow: d.flow, kind: d.kind, label: d.label, fileId: d.fileId, createdAt: d.createdAt.toISOString() })),
+    notes: { count: noteRows.length, latest: latestNote },
   };
+}
+
+// ───────────────────────────────────────────── activity thread (notes + events)
+export type ThreadEntry = ActivityEntry;
+
+/**
+ * The mission activity thread — manual notes interleaved with the mission's own
+ * audit events, newest first. Notes carry their author + body; events are the
+ * lifecycle/override/upload entries the mission already emits.
+ */
+export async function getMissionThread(orgId: string, missionId: string): Promise<ThreadEntry[]> {
+  const db = getAdminDb();
+  const [notes, events] = await Promise.all([
+    db.select().from(missionNotes).where(and(eq(missionNotes.orgId, orgId), eq(missionNotes.missionId, missionId))).orderBy(desc(missionNotes.createdAt)),
+    db.select().from(auditEvents).where(and(eq(auditEvents.orgId, orgId), eq(auditEvents.entityType, "mission"), eq(auditEvents.entityId, missionId))).orderBy(desc(auditEvents.createdAt)).limit(200),
+  ]);
+  const authorIds = [...new Set(notes.map((n) => n.authorPersonId).filter((x): x is string => x != null))];
+  const authors = authorIds.length
+    ? await db.select({ id: persons.id, name: persons.name }).from(persons).where(inArray(persons.id, authorIds))
+    : [];
+  const nameOf = new Map(authors.map((a) => [a.id, a.name]));
+
+  const noteEntries: ThreadEntry[] = notes.map((n) => ({
+    id: `note:${n.id}`,
+    kind: "note",
+    action: "Note",
+    actor: n.authorPersonId ? nameOf.get(n.authorPersonId) ?? "Unknown" : "Unknown",
+    at: n.createdAt.toISOString(),
+    body: n.body,
+    hasAttachment: n.fileId != null,
+  }));
+  const eventEntries: ThreadEntry[] = events.map((e) => ({
+    id: e.id,
+    kind: "event",
+    action: e.action,
+    actor: e.actorUserId,
+    at: e.createdAt.toISOString(),
+  }));
+  return interleaveActivity(noteEntries, eventEntries);
+}
+
+/** Append a manual note (optionally with a content-addressed attachment). */
+export async function addMissionNote(
+  ctx: TenantCtx,
+  input: { missionId: string; body: string; authorPersonId?: string; fileId?: string },
+) {
+  if (!input.body.trim()) throw new Error("A note cannot be empty");
+  return withTenant(getAdminDb(), ctx, async (tx) => {
+    await tx.insert(missionNotes).values({
+      orgId: ctx.orgId,
+      missionId: input.missionId,
+      authorPersonId: input.authorPersonId,
+      body: input.body.trim(),
+      fileId: input.fileId,
+    });
+    // The note is itself the record; a light audit entry keeps the thread complete.
+    await audit(tx, ctx, { action: "mission.note_added", entityType: "mission", entityId: input.missionId });
+  });
 }
 
 // ───────────────────────────────────────────────────────────────── mutations
