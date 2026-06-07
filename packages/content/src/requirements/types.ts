@@ -26,6 +26,9 @@ export const RECORD_TYPES = [
 ] as const;
 export type RecordType = (typeof RECORD_TYPES)[number];
 
+export const RISK_TIERS = ["baseline", "low", "high", "management_system"] as const;
+export type RiskTier = (typeof RISK_TIERS)[number];
+
 export interface RequirementDef {
   /** Verbatim seed id, e.g. "GACAR107:107.139". */
   id: string;
@@ -40,6 +43,14 @@ export interface RequirementDef {
   kind: "regulation" | "guidance" | "standard";
   /** Derived from framework (the DB stores only requirement_ref strings). */
   jurisdiction: (typeof JURISDICTION_KEYS)[number];
+  /** The framework's own operational-category term, shown in UI (honest label). */
+  categoryNative: string;
+  /**
+   * Normalized engine tier the mission rule compares against (re-tag v1.3):
+   * baseline (all ops) · low (open/standard only) · high (specific/advanced
+   * only) · management_system (ISO QMS, never mission-gated).
+   */
+  riskTier: RiskTier;
 }
 
 export const requirementSchema = z.object({
@@ -52,4 +63,6 @@ export const requirementSchema = z.object({
   version: z.string().min(1),
   kind: z.enum(["regulation", "guidance", "standard"]),
   jurisdiction: z.enum(JURISDICTION_KEYS),
+  categoryNative: z.string().min(1),
+  riskTier: z.enum(RISK_TIERS),
 }) satisfies z.ZodType<RequirementDef>;

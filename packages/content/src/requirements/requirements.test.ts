@@ -63,4 +63,30 @@ describe("requirement content", () => {
     }
     expect(getRequirement("ISO9001:4.1")?.kind).toBe("standard");
   });
+
+  it("operational-category re-tag v1.3: every requirement is tagged, none null", () => {
+    for (const r of REQUIREMENTS) {
+      expect(r.riskTier, r.id).toBeTruthy();
+      expect(["baseline", "low", "high", "management_system"]).toContain(r.riskTier);
+      expect(r.categoryNative, r.id).toBeTruthy();
+    }
+  });
+
+  it("risk_tier totals are baseline 45 · low 1 · high 26 · management_system 20 (=92)", () => {
+    const count = (t: string) => REQUIREMENTS.filter((r) => r.riskTier === t).length;
+    const tally = {
+      baseline: count("baseline"),
+      low: count("low"),
+      high: count("high"),
+      management_system: count("management_system"),
+    };
+    expect(tally).toEqual({ baseline: 45, low: 1, high: 26, management_system: 20 });
+    expect(tally.baseline + tally.low + tally.high + tally.management_system).toBe(92);
+  });
+
+  it("ISO requirements are management_system (never mission-tiered)", () => {
+    for (const r of REQUIREMENTS.filter((r) => r.framework === "ISO 9001")) {
+      expect(r.riskTier).toBe("management_system");
+    }
+  });
 });

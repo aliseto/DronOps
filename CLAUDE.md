@@ -22,10 +22,14 @@ M5 Fleet · M6 Flight Evidence · M7 Personnel & Crew.
 - `docs/DRO-REG-001.md` — regulatory comparison & implementation matrix;
   jurisdiction modes, deadline values (3h/72h/10d), retention (build-to-
   strictest: 36 months), flight-record union schema, gate rules.
-- `docs/dronops_requirements_seed.sql` (+ `_oman_v1.1.sql` and `_iso_v1.2.sql`
-  addenda) — 92 clause-anchored requirement objects across 9 framework strings
-  (incl. ISO 9001, kind `standard`); convert to `packages/content` data via
-  scripts/convert-seed.mjs, never hand-edit, and never execute against the DB.
+- `docs/dronops_requirements_seed.sql` (+ `_oman_v1.1.sql`, `_iso_v1.2.sql`
+  addenda and `_operational_category_retag_v1.3.sql`) — 92 clause-anchored
+  requirement objects across 9 framework strings (incl. ISO 9001, kind
+  `standard`), each carrying `categoryNative` + `riskTier`
+  (baseline/low/high/management_system: totals 45/1/26/20); convert to
+  `packages/content` data via scripts/convert-seed.mjs, never hand-edit, and
+  never execute against the DB. The mission rule (M2 coverage / M4 gates) lives
+  in `@dronops/shared` `requirementsForMission` — high never mixes with low.
 
 ## Stack (pinned)
 
