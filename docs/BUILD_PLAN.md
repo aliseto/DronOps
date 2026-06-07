@@ -188,7 +188,24 @@ append-only operational log (NOT chat) per mission, interleaving manual notes
 audit events. `mission_notes` (append-only by trigger); `interleaveActivity` pure
 helper (newest-first, drops the note_added twin). Composer on the full page +
 latest-note/count in the triage drawer. Async only — no real-time/threading/
-reactions/mentions. **Next milestone: M2 Compliance.**
+reactions/mentions.
+
+**M2 Compliance — deviation→finding loop (PR-025)** — closes the "every flight
+audits itself" loop. `findings` + `capa_actions`; the finding engine
+(@dronops/shared compliance/findings) maps deviation severity→level
+(high/medium/low → major/minor/observation), content-driven CAPA due windows
+(capaRuleFor), the lean lifecycle (open→containment→capa-in-progress→verify→
+closed + false-positive off-ramp = StatusPill ncr vocab), triage, and the SoD
+guard. **The inbound trigger is SEAL**: sealFlight auto-raises one open/untriaged
+finding per deviation with the sealed log pre-attached (atomic, audited,
+idempotent). **SoD in the data layer** (enforce_finding_sod SECURITY DEFINER:
+raiser ≠ verifier, Hard Rule 4) + closed/false-positive immutable + no hard
+delete (enforce_finding_terminal); all four invariants SQL-probed. Triage reason
+REQUIRED for the signal-weakening outcomes (downgrade, false-positive), optional
+for accept, logged to audit always. Two-level disclosure: findings list + triage
+queue → finding drawer (evidence-inline triage) → full finding page (lifecycle,
+CAPA, SoD-guarded close, immutable-when-terminal). Migration 0017 applied.
+**Next: M2 coverage matrix (PR-026) · management review · M3 Safety.**
 
 **Then** (per v2 ordering): M2 Compliance (coverage
 matrix + NCR/CAPA closing the deviation→finding loop) · M3 Safety & occurrence
