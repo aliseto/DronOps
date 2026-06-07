@@ -1,80 +1,87 @@
 import { describe, it, expect } from "vitest";
-import { dutyProjection, dutySchemeFor } from "./duty";
-import type { DutySchemeRule } from "@dronops/content";
+import { dutyProjection, dutySchemeFor, type DutyRecord } from "./duty";
+import { DUTY_SCHEMES, maxDutyMinutes } from "@dronops/content";
 
+const scheme = DUTY_SCHEMES["UAE-Dubai"]!;
 const at = (iso: string) => new Date(iso);
-// Concrete scheme for exercising breach logic (the real UAE-Dubai values are pending).
-const scheme: DutySchemeRule = {
-  clause: "TEST",
-  maxDutyHoursPerPeriod: 10,
-  dutyPeriodHours: 24,
-  minRestHours: 11,
-  maxConsecutiveDutyDays: 5,
-  valuesPending: false,
-};
+// A duty period of `mins` minutes starting at `startIso`, with `extra` flight areas.
+const duty = (startIso: string, mins: number, extra = 0): DutyRecord => ({
+  startAt: at(startIso),
+  endAt: new Date(at(startIso).getTime() + mins * 60_000),
+  extraFlightAreas: extra,
+});
 
-describe("dutyProjection", () => {
-  it("returns no-scheme when none applies", () => {
-    expect(dutyProjection([], undefined).status).toBe("no-scheme");
+describe("OSO#17 duty engine (v1.4)", () => {
+  it("worked example: 3 extra flight areas → max duty 600 min", () => {
+    expect(maxDutyMinutes(scheme, 0)).toBe(780);
+    expect(maxDutyMinutes(scheme, 3)).toBe(600);
   });
 
-  it("returns not-applicable for a pilot the rule doesn't cover (never amber)", () => {
-    const real = dutySchemeFor("UAE-Dubai");
-    // Even with a configured scheme + duty records, open-category pilots are out of scope.
-    const r = dutyProjection(
-      [{ startAt: at("2026-06-01T06:00:00Z"), endAt: at("2026-06-01T18:30:00Z") }],
-      scheme,
-      { applicable: false },
-    );
+  it("loads real values (no longer pending)", () => {
+    const s = dutySchemeFor("UAE-Dubai")!;
+    expect(s.maxDutyMinutesBase).toBe(780);
+    expect(s.maxFlightBlockMinutesPerDay).toBe(240);
+    expect(s.minRestMinutesFloor).toBe(480);
+  });
+
+  it("returns not-applicable for an uncovered (open-category) pilot — never amber", () => {
+    const r = dutyProjection([duty("2026-06-01T06:00:00Z", 900)], scheme, { applicable: false });
     expect(r.status).toBe("not-applicable");
     expect(r.breaches).toEqual([]);
-    // not-applicable is distinct from not-configured (applicable-but-unset).
-    expect(dutyProjection([], real, { applicable: true }).status).toBe("not-configured");
   });
 
-  it("returns not-configured for the real UAE-Dubai scheme (OSO#17 values pending)", () => {
-    const real = dutySchemeFor("UAE-Dubai");
-    expect(real?.valuesPending).toBe(true);
-    expect(dutyProjection([{ startAt: at("2026-06-01T06:00:00Z"), endAt: at("2026-06-01T23:00:00Z") }], real).status).toBe(
-      "not-configured",
-    );
-  });
-
-  it("flags a duty period exceeding the maximum", () => {
-    const r = dutyProjection([{ startAt: at("2026-06-01T06:00:00Z"), endAt: at("2026-06-01T18:30:00Z") }], scheme);
+  // 1. duty-minutes
+  it("breach 1: duty exceeds the per-day maximum (base, 0 extra areas)", () => {
+    const r = dutyProjection([duty("2026-06-01T06:00:00Z", 800)], scheme); // 800 > 780
     expect(r.status).toBe("breach");
-    expect(r.breaches.some((b) => b.kind === "duty-hours-exceeded")).toBe(true);
+    expect(r.breaches.some((b) => b.kind === "duty-minutes-exceeded")).toBe(true);
   });
 
-  it("flags insufficient rest between consecutive duties", () => {
+  it("breach 1b: 600-min duty with 3 extra areas meets the reduced cap; 601 breaches", () => {
+    expect(dutyProjection([duty("2026-06-01T06:00:00Z", 600, 3)], scheme).status).toBe("ok");
+    const over = dutyProjection([duty("2026-06-01T06:00:00Z", 601, 3)], scheme);
+    expect(over.breaches.some((b) => b.kind === "duty-minutes-exceeded")).toBe(true);
+  });
+
+  // 3. rest
+  it("breach 3: rest below max(last-duty, floor)", () => {
+    // Day 1 duty 600 min; only 300 min rest before next duty → below max(600,480)=600.
     const r = dutyProjection(
-      [
-        { startAt: at("2026-06-01T06:00:00Z"), endAt: at("2026-06-01T14:00:00Z") },
-        { startAt: at("2026-06-01T20:00:00Z"), endAt: at("2026-06-02T04:00:00Z") },
-      ],
+      [duty("2026-06-01T06:00:00Z", 600), duty("2026-06-01T21:00:00Z", 120)],
       scheme,
     );
     expect(r.breaches.some((b) => b.kind === "insufficient-rest")).toBe(true);
   });
 
-  it("passes a compliant pair of duties", () => {
+  it("rest at the floor passes when the last duty was short", () => {
+    // last duty 120 min → required = max(120,480)=480; give exactly 480 rest.
     const r = dutyProjection(
-      [
-        { startAt: at("2026-06-01T06:00:00Z"), endAt: at("2026-06-01T14:00:00Z") },
-        { startAt: at("2026-06-02T06:00:00Z"), endAt: at("2026-06-02T14:00:00Z") },
-      ],
+      [duty("2026-06-01T06:00:00Z", 120), duty("2026-06-01T16:00:00Z", 120)],
       scheme,
     );
-    expect(r.status).toBe("ok");
-    expect(r.breaches).toEqual([]);
+    expect(r.breaches.some((b) => b.kind === "insufficient-rest")).toBe(false);
   });
 
-  it("flags more than the allowed consecutive duty days", () => {
-    const records = Array.from({ length: 6 }, (_, i) => {
-      const day = String(i + 1).padStart(2, "0");
-      return { startAt: at(`2026-06-${day}T06:00:00Z`), endAt: at(`2026-06-${day}T12:00:00Z`) };
-    });
-    const r = dutyProjection(records, scheme);
-    expect(r.breaches.some((b) => b.kind === "consecutive-days-exceeded")).toBe(true);
+  // 4. weekly day off
+  it("breach 4: 7 consecutive duty days with no day off", () => {
+    const records = Array.from({ length: 7 }, (_, i) =>
+      duty(`2026-06-${String(i + 1).padStart(2, "0")}T06:00:00Z`, 300),
+    );
+    expect(dutyProjection(records, scheme).breaches.some((b) => b.kind === "no-weekly-day-off")).toBe(true);
+  });
+
+  it("six duty days then a day off is fine", () => {
+    const days = [1, 2, 3, 4, 5, 6, 8]; // gap on day 7
+    const records = days.map((d) => duty(`2026-06-${String(d).padStart(2, "0")}T06:00:00Z`, 300));
+    expect(dutyProjection(records, scheme).breaches.some((b) => b.kind === "no-weekly-day-off")).toBe(false);
+  });
+
+  // 2. block time
+  it("block-time rule reports awaiting-m6 until flight records exist", () => {
+    expect(dutyProjection([duty("2026-06-01T06:00:00Z", 300)], scheme).blockTime).toBe("awaiting-m6");
+  });
+
+  it("a clean single duty day is ok", () => {
+    expect(dutyProjection([duty("2026-06-01T06:00:00Z", 600)], scheme).status).toBe("ok");
   });
 });

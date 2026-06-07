@@ -1,35 +1,39 @@
-import { DUTY_SCHEMES, type DutySchemeRule } from "@dronops/content";
+import { DUTY_SCHEMES, maxDutyMinutes, type DutySchemeRule } from "@dronops/content";
 import type { Jurisdiction } from "../jurisdiction/engine";
 
 /**
- * Duty / rest engine (DUOSAM OSO#17). Pure functions over duty records + a
- * content scheme. OSO#17 duty/rest is NOT all of UAE-Dubai — it binds to
- * SPECIFIC-CATEGORY (higher-risk) operations, the same way jurisdiction binds to
- * a record elsewhere. Applicability is therefore an explicit input, never
- * inferred from the jurisdiction alone:
+ * Duty / rest engine — DUOSAM OSO#17 (DCAR-UAS), values v1.4. Pure functions over
+ * duty records + the content scheme. OSO#17 binds to SPECIFIC-CATEGORY Dubai ops,
+ * so applicability is an explicit input — never inferred from jurisdiction alone:
  *
- *   - not-applicable : the person isn't covered (e.g. open-category-only Dubai).
- *                      A truthful "doesn't apply" — never amber, never a breach.
- *   - not-configured : applicable, but OSO#17 numeric values are still pending
- *                      (DRO-REG-001 §16.2) — applicable-but-unset, not doesn't-
- *                      apply. Reported rather than a silent false pass.
+ *   - not-applicable : the person isn't covered (open-category-only Dubai). A
+ *                      truthful "doesn't apply" — never amber, never a breach.
  *   - no-scheme      : no duty scheme in the enabled jurisdictions.
+ *   - ok / breach    : live evaluation of the four OSO#17 behaviours.
  *
- * Breaches feed the deviation→finding loop (M3) at projection/roster time; this
- * engine only computes them.
+ * Four behaviours (source v1.4):
+ *   1. Duty/day ≤ base − extraAreas×reduction  (780 − 60·areas).
+ *   2. Block time/day ≤ 240 min — block time accrues from M6 flight records;
+ *      until M6 exists this rule reports `blockTime: "awaiting-m6"`, never a pass.
+ *   3. Rest before next duty ≥ max(last-duty-duration, 480 min floor).
+ *   4. ≥1 full day off in any rolling 7-day window.
+ *
+ * Breaches feed the deviation→finding loop (M3); this engine only computes them.
  */
 
-const HOUR_MS = 3_600_000;
+const MIN_MS = 60_000;
 
 export interface DutyRecord {
   startAt: Date;
   endAt: Date;
+  /** Additional flight areas beyond the first (drives the duty-minutes reduction). */
+  extraFlightAreas?: number;
 }
 
 export type DutyBreachKind =
-  | "duty-hours-exceeded"
+  | "duty-minutes-exceeded"
   | "insufficient-rest"
-  | "consecutive-days-exceeded";
+  | "no-weekly-day-off";
 
 export interface DutyBreach {
   kind: DutyBreachKind;
@@ -39,34 +43,28 @@ export interface DutyBreach {
   detail: string;
 }
 
-export type DutyProjectionStatus =
-  | "ok"
-  | "breach"
-  | "not-configured"
-  | "not-applicable"
-  | "no-scheme";
+export type DutyProjectionStatus = "ok" | "breach" | "not-applicable" | "no-scheme";
+
+/** Block-time rule state: it can only evaluate once M6 supplies flight block time. */
+export type BlockTimeStatus = "awaiting-m6" | "ok" | "breach";
 
 export interface DutyProjection {
   status: DutyProjectionStatus;
   breaches: DutyBreach[];
+  /** Block-time (240 min/day) rule — "awaiting-m6" until flight records exist. */
+  blockTime: BlockTimeStatus;
   clause?: string;
 }
 
-const hours = (a: Date, b: Date) => (b.getTime() - a.getTime()) / HOUR_MS;
-const sameUtcDay = (a: Date, b: Date) =>
-  a.getUTCFullYear() === b.getUTCFullYear() &&
-  a.getUTCMonth() === b.getUTCMonth() &&
-  a.getUTCDate() === b.getUTCDate();
+const minutes = (a: Date, b: Date) => (b.getTime() - a.getTime()) / MIN_MS;
+const utcDayKey = (d: Date) => Math.floor(d.getTime() / 86_400_000); // UTC day index
 
 /**
- * Project duty/rest breaches for one person's records under a scheme. Records
- * may be historical or planned (rostering warnings come from projecting planned
- * duty).
+ * Project duty/rest breaches for one person's records under a scheme.
  *
- * `opts.applicable` gates coverage: OSO#17 applies only to specific-category
- * operations, so a person the rule doesn't cover returns "not-applicable" (never
- * amber). Pass `applicable: false` for open-category-only pilots. Default true so
- * the breach logic stays directly testable.
+ * `opts.applicable` gates coverage: pass `false` for a pilot OSO#17 doesn't cover
+ * (open-category-only) → "not-applicable" (never amber). Default true so the
+ * breach logic stays directly testable.
  */
 export function dutyProjection(
   records: readonly DutyRecord[],
@@ -74,72 +72,68 @@ export function dutyProjection(
   opts: { applicable?: boolean } = {},
 ): DutyProjection {
   if (opts.applicable === false) {
-    return { status: "not-applicable", breaches: [], clause: scheme?.clause };
+    return { status: "not-applicable", breaches: [], blockTime: "awaiting-m6", clause: scheme?.clause };
   }
-  if (!scheme) return { status: "no-scheme", breaches: [] };
-  if (
-    scheme.valuesPending ||
-    scheme.maxDutyHoursPerPeriod == null ||
-    scheme.dutyPeriodHours == null ||
-    scheme.minRestHours == null ||
-    scheme.maxConsecutiveDutyDays == null
-  ) {
-    return { status: "not-configured", breaches: [], clause: scheme.clause };
-  }
+  if (!scheme) return { status: "no-scheme", breaches: [], blockTime: "awaiting-m6" };
 
   const sorted = [...records].sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
   const breaches: DutyBreach[] = [];
 
+  // 1. Duty minutes per record ≤ base − extraAreas × reduction.
   for (const r of sorted) {
-    const dutyHours = hours(r.startAt, r.endAt);
-    if (dutyHours > scheme.maxDutyHoursPerPeriod) {
+    const dutyMin = minutes(r.startAt, r.endAt);
+    const limit = maxDutyMinutes(scheme, r.extraFlightAreas ?? 0);
+    if (dutyMin > limit) {
       breaches.push({
-        kind: "duty-hours-exceeded",
+        kind: "duty-minutes-exceeded",
         at: r.endAt,
-        limit: scheme.maxDutyHoursPerPeriod,
-        actual: Number(dutyHours.toFixed(2)),
-        detail: `Duty ${dutyHours.toFixed(1)}h exceeds ${scheme.maxDutyHoursPerPeriod}h`,
+        limit,
+        actual: Math.round(dutyMin),
+        detail: `Duty ${Math.round(dutyMin)} min exceeds ${limit} min (${r.extraFlightAreas ?? 0} extra area(s))`,
       });
     }
   }
 
+  // 3. Rest before next duty ≥ max(last-duty-duration, floor).
   for (let i = 1; i < sorted.length; i++) {
-    const rest = hours(sorted[i - 1]!.endAt, sorted[i]!.startAt);
-    if (rest < scheme.minRestHours) {
+    const prev = sorted[i - 1]!;
+    const cur = sorted[i]!;
+    const rest = minutes(prev.endAt, cur.startAt);
+    const required = Math.max(minutes(prev.startAt, prev.endAt), scheme.minRestMinutesFloor);
+    if (rest < required) {
       breaches.push({
         kind: "insufficient-rest",
-        at: sorted[i]!.startAt,
-        limit: scheme.minRestHours,
-        actual: Number(rest.toFixed(2)),
-        detail: `Rest ${rest.toFixed(1)}h below ${scheme.minRestHours}h minimum`,
+        at: cur.startAt,
+        limit: Math.round(required),
+        actual: Math.round(rest),
+        detail: `Rest ${Math.round(rest)} min below required ${Math.round(required)} min (≥ last duty, floor ${scheme.minRestMinutesFloor})`,
       });
     }
   }
 
-  // Consecutive UTC duty days without a full off-day.
+  // 4. ≥1 full day off in any rolling 7-day window ⟺ no 7 consecutive duty-days.
+  const dutyDays = [...new Set(sorted.map((r) => utcDayKey(r.startAt)))].sort((a, b) => a - b);
   let run = 0;
-  let prevDay: Date | null = null;
-  for (const r of sorted) {
-    if (prevDay && sameUtcDay(prevDay, r.startAt)) continue; // same day, one run unit
-    if (prevDay && hours(prevDay, r.startAt) <= 48 && !sameUtcDay(prevDay, r.startAt)) {
-      const gapDays = Math.round(hours(prevDay, r.startAt) / 24);
-      run = gapDays <= 1 ? run + 1 : 1;
-    } else {
-      run = 1;
-    }
-    if (run > scheme.maxConsecutiveDutyDays) {
+  for (let i = 0; i < dutyDays.length; i++) {
+    run = i > 0 && dutyDays[i]! - dutyDays[i - 1]! === 1 ? run + 1 : 1;
+    if (run >= 7) {
       breaches.push({
-        kind: "consecutive-days-exceeded",
-        at: r.startAt,
-        limit: scheme.maxConsecutiveDutyDays,
-        actual: run,
-        detail: `${run} consecutive duty days exceeds ${scheme.maxConsecutiveDutyDays}`,
+        kind: "no-weekly-day-off",
+        at: new Date(dutyDays[i]! * 86_400_000),
+        limit: scheme.minDaysOffPer7d,
+        actual: 0,
+        detail: `7 consecutive duty days — no full day off in the 7-day window`,
       });
+      break;
     }
-    prevDay = r.startAt;
   }
 
-  return { status: breaches.length > 0 ? "breach" : "ok", breaches, clause: scheme.clause };
+  return {
+    status: breaches.length > 0 ? "breach" : "ok",
+    breaches,
+    blockTime: "awaiting-m6", // block time sourced from M6 flight records
+    clause: scheme.clause,
+  };
 }
 
 /** Duty scheme for a jurisdiction (or undefined when the mode requires none). */

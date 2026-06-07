@@ -95,7 +95,14 @@ export async function logDutyAction(formData: FormData) {
   const endAt = date(formData.get("endAt"));
   if (!personId || !startAt || !endAt) throw new Error("Person, start and end are required");
   if (endAt <= startAt) throw new Error("End must be after start");
-  await logDuty(c, { personId, startAt, endAt, missionRef: str(formData.get("missionRef")) });
+  const extra = Number(formData.get("extraFlightAreas") ?? 0);
+  await logDuty(c, {
+    personId,
+    startAt,
+    endAt,
+    missionRef: str(formData.get("missionRef")),
+    extraFlightAreas: Number.isFinite(extra) && extra > 0 ? Math.floor(extra) : 0,
+  });
   revalidatePath("/personnel");
 }
 

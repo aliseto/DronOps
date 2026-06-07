@@ -279,7 +279,7 @@ export async function getPersonDetail(orgId: string, personId: string): Promise<
   const applicable = schemeJ != null && (await runsDubaiSpecificCategory(orgId));
   const duty = {
     projection: dutyProjection(
-      duties.map((d) => ({ startAt: d.startAt, endAt: d.endAt })),
+      duties.map((d) => ({ startAt: d.startAt, endAt: d.endAt, extraFlightAreas: d.extraFlightAreas })),
       schemeJ ? dutySchemeFor(schemeJ) : undefined,
       { applicable },
     ),
@@ -433,7 +433,14 @@ export async function logRecencyEvent(
 
 export async function logDuty(
   ctx: TenantCtx,
-  input: { personId: string; startAt: Date; endAt: Date; missionRef?: string; planned?: boolean },
+  input: {
+    personId: string;
+    startAt: Date;
+    endAt: Date;
+    missionRef?: string;
+    planned?: boolean;
+    extraFlightAreas?: number;
+  },
 ) {
   return withTenant(getAdminDb(), ctx, async (tx) => {
     const [d] = await tx
@@ -445,10 +452,11 @@ export async function logDuty(
         endAt: input.endAt,
         missionRef: input.missionRef,
         planned: input.planned ?? false,
+        extraFlightAreas: input.extraFlightAreas ?? 0,
       })
       .returning();
     if (!d) throw new Error("duty insert failed");
-    await audit(tx, ctx, { action: "duty_record.create", entityType: "duty_record", entityId: d.id, after: { startAt: input.startAt, endAt: input.endAt } });
+    await audit(tx, ctx, { action: "duty_record.create", entityType: "duty_record", entityId: d.id, after: { startAt: input.startAt, endAt: input.endAt, extraFlightAreas: input.extraFlightAreas ?? 0 } });
     return d;
   });
 }

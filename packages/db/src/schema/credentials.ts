@@ -98,6 +98,8 @@ export const dutyRecords = pgTable(
     endAt: timestamp("end_at", { withTimezone: true }).notNull(),
     missionRef: text("mission_ref"),
     planned: boolean("planned").notNull().default(false),
+    /** Additional flight areas beyond the first — drives the OSO#17 duty reduction. */
+    extraFlightAreas: integer("extra_flight_areas").notNull().default(0),
     notes: text("notes"),
     ...timestamps(),
   },

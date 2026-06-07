@@ -133,9 +133,11 @@ medical gate 102.185) → fit-to-fly ReadinessVerdict per person × airframe cla
 jurisdiction; both **not-fit and unknown block assignment** (reason distinguishes
 renew vs obtain). Duty/rest engine (DUOSAM OSO#17) gated to **specific-category**
 Dubai ops with a distinct `not-applicable` state (never amber for an uncovered
-pilot); OSO#17 numeric values remain a flagged open item (pending owner). Tables:
+pilot). **OSO#17 numeric values loaded (v1.4, PR-020)**: duty ≤780 min/day
+(−60/extra area), rest ≥ max(last-duty, 480 min), ≥1 day off/7 d; the block-time
+rule (≤240 min/day) shows "awaiting M6" until flight records exist. Tables:
 `credentials`, `recency_events` (append-only; the **M6 flight seam** — source
-`m6_flight`), `duty_records`, `org_currency_rules`. Crew roster (readiness-pill
+`m6_flight`), `duty_records` (incl. `extra_flight_areas`), `org_currency_rules`. Crew roster (readiness-pill
 dominant, filter/sort, ≤90 d expiry count, recency N/M denominator, no-wallet
 obligation) + person Drawer (Overview/Credentials/Recency/Duty/History) with the
 logged override path. **Next milestone: M5 Fleet.**
@@ -167,7 +169,8 @@ G8 end-to-end story test becomes the release gate as modules land.
 
 1. Real DJI logs before M6 parser. 2. Email provider (notifications).
 3. Prototype data export contents (dogfood migration). 4. OSO#17 numeric duty
-values (Phase 1). 5. STS-B1 publication (Phase 1). 6. Manual-suite
+values — LOADED (v1.4, PR-020); block-time rule awaits M6. 5. STS-B1 publication
+(Phase 1). 6. Manual-suite
 parameterization fields (PR-015). 7. ISO 9001 clause content — separate
 authoring task, never invented. 8. Any new top-level table → schema proposal in
 the PR description first.

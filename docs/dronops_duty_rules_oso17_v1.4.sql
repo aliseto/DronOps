@@ -1,0 +1,59 @@
+-- DronOps duty-rule values v1.4 (2026-06-07) — OSO#17 (DCAA / DUOSAM)
+-- ============================================================================
+-- SOURCE: DCAR-UAS / DUOSAM operations-manual, "Duty Hours and Rest Periods
+-- (OSO#17)" — extracted verbatim from the DCAA document already on file.
+-- These are the numeric limits the M7 duty engine was stubbed for. They apply
+-- ONLY to UAE-Dubai specific-category operations (risk_tier 'high'); a standard/
+-- open-category Dubai operation does not invoke OSO#17 (duty card = "not
+-- applicable", per the M7 duty-scope correction).
+--
+-- Engine semantics: flight-duty values are MAXIMA; rest values are MINIMA.
+-- They may be further restricted by company/collective agreement, never
+-- extended. A crew member self-declares fitness (no health / duty-rest
+-- conflict) before commencement.
+-- ============================================================================
+
+-- Rule object shape for packages/content/rules/duty.ts (jurisdiction-scoped):
+--   jurisdiction: 'UAE-Dubai'
+--   applies_when: { risk_tier: 'high' }            -- specific-category only
+--   objective: 'OSO#17'
+--   values:
+--     max_duty_minutes_base        : 780            -- 13 h / day, all crew
+--     duty_reduction_per_extra_area : 60            -- minus 1 h per additional flight area
+--     max_flight_block_minutes_day : 240            -- 4 h block time / day, remote pilots
+--     min_rest_minutes_floor       : 480            -- 8 h absolute floor between duties
+--     min_rest_rule                : 'ge_last_duty' -- rest >= duration of the last duty period,
+--                                                   --   but never < min_rest_minutes_floor
+--     min_days_off_per_7d          : 1              -- >= 1 full day off every 7 days
+--   definitions (engine notes, not numeric):
+--     flight_area  : a new flight area is one the UAS cannot reach without
+--                    additional resources; same for a ground station whose
+--                    relocation involves great effort. Each extra area triggers
+--                    the per-area duty reduction.
+--     duty_time    : report-for-duty → free of all duty incl. post-flight.
+--     flight_time  : block time — UA able to move under own propulsion → unable.
+--     rest_time    : continuous, uninterrupted, free of duty and standby.
+--
+-- WORKED EXAMPLE (from source): 3 additional flight areas →
+--   max duty/day = 780 − 3×60 = 600 minutes (10 h).
+--
+-- ENGINE BEHAVIOURS:
+--  1. Per crew member per duty day, compute max_duty = base − (extra_areas ×
+--     reduction); breach if actual duty > max_duty.
+--  2. Block time breach if flight/block time in a day > 240 min.
+--  3. Rest breach if rest before next duty < max(last_duty_duration, 480 min).
+--  4. Weekly: breach if no full day off in any rolling 7-day window.
+--  5. Flight time accrues from M6 records (built later); duty time from M4
+--     mission start/end + pre/post. Until M6, duty engine runs on M4 times and
+--     manual entry; block-time rule shows "awaiting M6" rather than a false pass.
+--  6. Self-declaration of fitness is a pre-commencement checklist item on
+--     specific-category Dubai missions (links the crew declaration record).
+--
+-- This replaces the M7 "OSO#17 numeric limits pending" stub. The duty card
+-- flips from the amber "not configured" state to live evaluation for
+-- specific-category UAE-Dubai assignments once these values are loaded.
+-- ============================================================================
+
+-- (No table writes here — duty limits live in packages/content/rules as
+--  versioned data, zod-validated, consumed by the duty engine. This file is
+--  the source-of-extraction record, same pattern as the requirement seeds.)
