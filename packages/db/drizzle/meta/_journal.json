@@ -1,0 +1,55 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1780819497116,
+      "tag": "0000_curious_christian_walker",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1780820200194,
+      "tag": "0001_parched_kree",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780820866094,
+      "tag": "0002_awesome_otto_octavius",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1780821240212,
+      "tag": "0003_cheerful_vin_gonzales",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1780824980985,
+      "tag": "0004_powerful_rage",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1780825373982,
+      "tag": "0005_redundant_cloak",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780826467190,
+      "tag": "0006_ancient_mother_askani",
+      "breakpoints": true
+    }
+  ]
+}

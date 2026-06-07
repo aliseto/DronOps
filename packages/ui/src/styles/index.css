@@ -1,0 +1,52 @@
+/*
+ * Base element styles for the DronOps UI. Consumes semantic tokens only.
+ * Imported by the app after Tailwind + tokens (see apps/web globals.css).
+ */
+
+body {
+  background-color: var(--bg-app);
+  color: var(--fg-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 22px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Every system identifier renders in mono with tabular figures. */
+.font-identifier,
+code,
+kbd,
+samp {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tables align numerals. */
+table {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Visible focus ring everywhere (accessibility bar, DESIGN_SYSTEM §6). */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--bg-app),
+    0 0 0 4px var(--border-focus);
+  border-radius: var(--radius-sm);
+}
+
+/* Arabic pairs with Noto Sans Arabic; +10% line-height under lang=ar. */
+:lang(ar) {
+  line-height: 1.7;
+}
+
+/* Reduced motion: keep compliance-meaningful UI static. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

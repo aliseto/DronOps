@@ -1,0 +1,39 @@
+{
+  "name": "@dronops/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@dronops/content": "workspace:*",
+    "@dronops/db": "workspace:*",
+    "@dronops/shared": "workspace:*",
+    "@dronops/ui": "workspace:*",
+    "@simplewebauthn/browser": "catalog:",
+    "@simplewebauthn/server": "catalog:",
+    "@supabase/supabase-js": "^2.47.0",
+    "bcryptjs": "^2.4.3",
+    "drizzle-orm": "catalog:",
+    "next": "catalog:",
+    "next-auth": "catalog:",
+    "next-intl": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "catalog:",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:"
+  }
+}

@@ -1,0 +1,29 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build output
+.next/
+dist/
+out/
+*.tsbuildinfo
+.turbo/
+
+# test artifacts
+coverage/
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+**/e2e/.auth/
+
+# env
+.env
+.env.*
+!.env.example
+
+# misc
+.DS_Store
+*.log
+npm-debug.log*
+.vercel
