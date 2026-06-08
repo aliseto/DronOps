@@ -21,8 +21,8 @@ export const findings = pgTable(
     orgId: orgId(),
     code: text("code").notNull(), // NCR-001
     jurisdiction: text("jurisdiction"), // content key; the finding binds one
-    source: text("source").$type<"flight_deviation" | "audit" | "manual">().notNull(),
-    sourceRef: text("source_ref"), // flight_records.id for auto-raised
+    source: text("source").$type<"flight_deviation" | "audit" | "manual" | "occurrence">().notNull(),
+    sourceRef: text("source_ref"), // flight_records.id (auto-raised) / occurrences.id (escalated)
     deviationCode: text("deviation_code"), // ceiling_exceedance | low_battery | …
     level: text("level").$type<"major" | "minor" | "observation">().notNull(),
     severity: text("severity").$type<"high" | "medium" | "low">(),

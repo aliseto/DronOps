@@ -22,3 +22,4 @@ export * from "./findings";
 export * from "./requirement-coverage";
 export * from "./management-reviews";
 export * from "./audit-packs";
+export * from "./occurrences";
