@@ -240,6 +240,7 @@ export async function signManagementReview(ctx: TenantCtx, input: { id: string; 
       .where(eq(managementReviews.id, input.id));
     await audit(tx, ctx, { action: "management_review.sign", entityType: "management_review", entityId: input.id, after: { payloadHash: hash }, amr });
 
-    return { signerPersonId, signedAtUtc: signedAt.toISOString(), payloadHash: hash, method: input.proof.method };
+    const [signer] = await tx.select({ name: persons.name }).from(persons).where(eq(persons.id, signerPersonId)).limit(1);
+    return { signerName: signer?.name ?? "Signer", signedAtUtc: signedAt.toISOString(), payloadHash: hash, method: input.proof.method };
   });
 }
