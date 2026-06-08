@@ -221,7 +221,23 @@ Coverage sub-nav; coverage = overall % + per-framework bars → matrix grouped b
 framework → assess drawer (status + controlling-document link + note). **Gap →
 audit finding** (raiseFindingFromGap: source='audit', idempotent) — the second
 inbound to the loop alongside flight deviations.
-**Next: M2 management review · audit packs · M3 Safety.**
+
+**M2 Compliance — management review (ISO 9.3, PR-027)** — the OPERATIONAL/aviation
+QMS review (not a business review). A dated, period-scoped record at
+/compliance/reviews (Findings | Coverage | Reviews sub-nav). Lean assembly:
+summarizeReviewInputs (@dronops/shared) freezes the §9.3 operational inputs —
+audit/coverage + nonconformities (M2), operational performance (missions M4,
+deviation-finding trend M6, crew currency M7, fleet airworthiness M5), resource
+adequacy — into a snapshot; narrative §9.3.2 inputs (prior-action follow-up,
+customer SAFETY feedback only, risk/opportunity effectiveness, improvements) +
+§9.3.3 outputs are authored on the draft. Accountable-manager Tier-3 e-sign
+(reuses SignatureCeremony/recordSignature, signature bound to the review) freezes
+the snapshot and makes the record IMMUTABLE (enforce_management_review_immutability;
+no hard delete). Draft edit = quality_manager|accountable_manager; sign =
+accountable_manager. Migration 0019 (draft_editable/signed_immutable/delete_blocked
+SQL-probed). NO financial/sales/HR inputs by design. KPIs are displayed pulls, not
+a new engine.
+**Next: M2 audit packs (bundle signed reviews + coverage + findings) · M3 Safety.**
 
 **Then** (per v2 ordering): M2 Compliance (coverage
 matrix + NCR/CAPA closing the deviation→finding loop) · M3 Safety & occurrence
