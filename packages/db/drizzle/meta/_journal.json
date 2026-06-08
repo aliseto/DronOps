@@ -134,6 +134,13 @@
       "when": 1780864527778,
       "tag": "0018_safe_nehzno",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1780880091926,
+      "tag": "0019_burly_echo",
+      "breakpoints": true
     }
   ]
 }

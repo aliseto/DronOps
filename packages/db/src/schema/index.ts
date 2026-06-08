@@ -20,3 +20,4 @@ export * from "./flight-records";
 export * from "./missions";
 export * from "./findings";
 export * from "./requirement-coverage";
+export * from "./management-reviews";
