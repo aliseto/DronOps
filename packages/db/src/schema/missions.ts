@@ -1,4 +1,4 @@
-import { pgTable, text, uuid, timestamp, numeric, boolean, uniqueIndex, index } from "drizzle-orm/pg-core";
+import { pgTable, text, uuid, timestamp, numeric, boolean, jsonb, uniqueIndex, index } from "drizzle-orm/pg-core";
 import { orgId, primaryId, timestamps } from "./_shared";
 import { tenantPolicies } from "./rls";
 import { persons } from "./persons";
@@ -32,6 +32,9 @@ export const missions = pgTable(
     operationalCategory: text("operational_category")
       .$type<"open" | "standard" | "specific" | "advanced">()
       .notNull(),
+    // Declared flight profiles (vlos/evlos/bvlos/night/populated) — the input the
+    // M3 risk-assessment gate reads to require a matching approved assessment.
+    flightProfiles: jsonb("flight_profiles").$type<string[]>(),
     aircraftId: uuid("aircraft_id").references(() => aircraft.id),
     plannedStartAt: timestamp("planned_start_at", { withTimezone: true }),
     plannedEndAt: timestamp("planned_end_at", { withTimezone: true }),

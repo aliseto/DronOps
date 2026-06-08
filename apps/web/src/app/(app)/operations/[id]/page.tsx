@@ -4,6 +4,7 @@ import { getActiveOrgId } from "@/server/active-org";
 import { getCurrentPersonId, getPersonRoles } from "@/server/rbac";
 import { listPersons } from "@/server/distributions";
 import { getMissionDetail, getMissionThread } from "@/server/operations";
+import { listRiskAssessments } from "@/server/risk-assessment";
 import { allowedTransitions, type MissionState } from "@dronops/shared";
 import { MissionDetailView } from "./MissionDetailView";
 
@@ -20,6 +21,7 @@ export default async function MissionPage({ params }: { params: Promise<{ id: st
   const roles = personId ? await getPersonRoles(orgId, personId) : [];
   const persons = await listPersons(orgId);
   const thread = await getMissionThread(orgId, id);
+  const riskAssessments = await listRiskAssessments(orgId, id);
   const transitions = allowedTransitions(detail.mission.status as MissionState, roles).map((t) => ({
     to: t.to,
     label: t.label,
@@ -34,6 +36,7 @@ export default async function MissionPage({ params }: { params: Promise<{ id: st
       roles={roles}
       thread={thread}
       canNote={roles.includes("operations_team") || roles.includes("approval_admin") || roles.includes("ops_manager")}
+      riskAssessments={riskAssessments}
     />
   );
 }

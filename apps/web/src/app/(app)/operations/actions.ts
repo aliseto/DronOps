@@ -17,6 +17,14 @@ import {
   overrideCrew,
   transitionMission,
 } from "@/server/operations";
+import {
+  createRiskAssessment,
+  updateRiskAssessment,
+  approveRiskAssessment,
+  setMissionProfiles,
+  type ApproveProof,
+} from "@/server/risk-assessment";
+import type { FlightProfile } from "@dronops/shared";
 
 async function ctx() {
   const user = await getCurrentUser();
@@ -166,4 +174,42 @@ export async function confirmGreenZoneAction(missionId: string) {
   if (!personId) throw new Error("No person record for the confirmer");
   await confirmGreenZone(c, missionId, personId);
   revalidatePath("/operations");
+}
+
+// ───────────────────────────────────────────── risk assessments (M3, S-03)
+export async function setMissionProfilesAction(missionId: string, profiles: FlightProfile[]) {
+  const c = await ctx();
+  await setMissionProfiles(c, missionId, profiles);
+  revalidatePath(`/operations/${missionId}`);
+}
+
+export async function createRiskAssessmentAction(formData: FormData) {
+  const c = await ctx();
+  const missionId = String(formData.get("missionId") ?? "");
+  const profile = String(formData.get("profile") ?? "") as FlightProfile;
+  const title = String(formData.get("title") ?? "").trim();
+  if (!missionId || !profile || !title) throw new Error("Mission, profile and title are required");
+  const residual = str(formData.get("residualRisk")) as "low" | "medium" | "high" | undefined;
+  const hazards = str(formData.get("hazards"));
+  await createRiskAssessment(c, { missionId, profile, title, residualRisk: residual, data: hazards ? { notes: hazards } : undefined });
+  revalidatePath(`/operations/${missionId}`);
+}
+
+export async function updateRiskAssessmentAction(formData: FormData) {
+  const c = await ctx();
+  const id = String(formData.get("id") ?? "");
+  const missionId = String(formData.get("missionId") ?? "");
+  if (!id) throw new Error("A risk assessment is required");
+  const residual = str(formData.get("residualRisk")) as "low" | "medium" | "high" | undefined;
+  const hazards = str(formData.get("hazards"));
+  await updateRiskAssessment(c, id, { title: str(formData.get("title")), residualRisk: residual, data: hazards ? { notes: hazards } : undefined });
+  if (missionId) revalidatePath(`/operations/${missionId}`);
+}
+
+export async function approveRiskAssessmentAction(id: string, missionId: string, meaning: string, proof: ApproveProof) {
+  const c = await ctx();
+  const result = await approveRiskAssessment(c, { id, meaning, proof });
+  revalidatePath(`/operations/${missionId}`);
+  revalidatePath("/operations");
+  return result;
 }

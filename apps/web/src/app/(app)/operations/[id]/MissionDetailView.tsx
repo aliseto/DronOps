@@ -5,25 +5,32 @@ import Link from "next/link";
 import {
   Button,
   Card,
+  Checkbox,
   EmptyState,
   Input,
   Select,
+  SignatureCeremony,
   StatusPill,
   Timeline,
   Textarea,
   type StatusVocab,
   type TimelineEvent,
 } from "@dronops/ui";
+import { FLIGHT_PROFILES, FLIGHT_PROFILE_LABELS, type FlightProfile } from "@dronops/shared";
 import type { MissionDetail, ThreadEntry } from "@/server/operations";
+import type { RiskAssessmentItem } from "@/server/risk-assessment";
 import {
   addInboundDocumentAction,
   addLocationAction,
   addMissionNoteAction,
+  approveRiskAssessmentAction,
   assignCrewAction,
   confirmGreenZoneAction,
+  createRiskAssessmentAction,
   importKmlAction,
   overrideCrewAction,
   recordApprovalAction,
+  setMissionProfilesAction,
   transitionMissionAction,
 } from "../actions";
 
@@ -51,6 +58,7 @@ export function MissionDetailView({
   roles,
   thread,
   canNote,
+  riskAssessments,
 }: {
   detail: MissionDetail;
   transitions: { to: string; label: string; crewGate?: boolean }[];
@@ -58,14 +66,18 @@ export function MissionDetailView({
   roles: string[];
   thread: ThreadEntry[];
   canNote: boolean;
+  riskAssessments: RiskAssessmentItem[];
 }) {
   const m = detail.mission;
   const r = detail.readiness;
   const canApprovalAdmin = roles.includes("approval_admin");
   const canOps = roles.includes("operations_team") || roles.includes("ops_manager");
+  const canApproveRA = roles.includes("ops_manager") || roles.includes("accountable_manager");
+  const planning = m.status === "planning";
   const assignable = m.status === "approved" || m.status === "ready";
   const simpleTransitions = transitions.filter((t) => t.to !== "approved");
   const recordApprovalAllowed = transitions.some((t) => t.to === "approved");
+  const riskBlocks = r.riskGate.required && !r.riskGate.satisfied;
 
   return (
     <div className="flex flex-col gap-4">
@@ -79,6 +91,7 @@ export function MissionDetailView({
           <div className="text-micro text-fg-muted font-mono tabular-nums">
             {m.code} · {m.jurisdiction} · {cap(m.operationalCategory)} → tier {r.riskTier}
           </div>
+          <ProfilesRow missionId={m.id} profiles={m.flightProfiles} editable={canOps && planning} />
         </div>
         <div className="flex flex-wrap gap-2">
           {simpleTransitions.map((t) => (
@@ -93,6 +106,12 @@ export function MissionDetailView({
           ))}
         </div>
       </div>
+
+      {riskBlocks && (
+        <div className="rounded-md bg-status-danger-bg px-4 py-2.5 text-small text-status-danger-fg">
+          <span className="font-medium">Approval blocked — risk assessment required.</span> {r.riskGate.reasons.join("; ")}. Add and approve the required assessment(s) before recording approval.
+        </div>
+      )}
 
       {assignable && r.blocked && (
         <div className="rounded-md bg-status-danger-bg px-4 py-2.5 text-small text-status-danger-fg">
@@ -128,7 +147,10 @@ export function MissionDetailView({
                   <Field label="Permit / OA no."><Input name="authorizationRef" /></Field>
                 </div>
                 <Field label="Approval letter / permit (PDF)"><input type="file" name="approvalFile" accept="application/pdf,image/*" className="text-small text-fg-secondary" /></Field>
-                <div><Button type="submit" variant="primary">Record approval ✓</Button></div>
+                <div className="flex items-center gap-3">
+                  <Button type="submit" variant="primary" disabled={riskBlocks}>Record approval ✓</Button>
+                  {riskBlocks && <span className="text-micro text-status-danger-fg">Risk-assessment gate not satisfied.</span>}
+                </div>
               </form>
             )}
           </Card>
@@ -230,7 +252,16 @@ export function MissionDetailView({
             <Gate label="Pilot recency" detail="evaluated per crew" />
             {r.gates.map((g) => <Gate key={g.type} label={cap(g.type)} detail={g.clause} />)}
             <Gate label="Duty / rest (OSO#17)" detail={r.dutyApplies ? "applies (specific-category)" : "n/a"} />
+            <Gate label="Risk assessment" detail={!r.riskGate.required ? "not required" : r.riskGate.satisfied ? "satisfied ✓" : `missing: ${r.riskGate.missingProfiles.map((p) => FLIGHT_PROFILE_LABELS[p as FlightProfile] ?? p).join(", ") || "RA required"}`} bad={riskBlocks} />
           </Card>
+
+          <RiskPanel
+            missionId={m.id}
+            rows={riskAssessments}
+            gate={r.riskGate}
+            canCreate={canOps && !["flown", "ready"].includes(m.status)}
+            canApprove={canApproveRA}
+          />
 
           <Card title="Applicable requirements">
             <p className="text-micro text-fg-muted">{cap(m.operationalCategory)} → baseline + {r.riskTier} tier only. Other tiers excluded; ISO is org-wide.</p>
@@ -322,9 +353,112 @@ function KV({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <label className="flex flex-col gap-1 text-small"><span className="text-fg-muted">{label}</span>{children}</label>;
 }
-function Gate({ label, detail }: { label: string; detail: string }) {
-  return <div className="flex items-center justify-between border-t border-subtle py-1.5 text-small first:border-t-0"><span>{label}</span><span className="text-micro text-fg-muted">{detail}</span></div>;
+function Gate({ label, detail, bad }: { label: string; detail: string; bad?: boolean }) {
+  return <div className="flex items-center justify-between border-t border-subtle py-1.5 text-small first:border-t-0"><span>{label}</span><span className={`text-micro ${bad ? "text-status-danger-fg font-medium" : "text-fg-muted"}`}>{detail}</span></div>;
 }
 function ReqLine({ k, v, muted }: { k: string; v: number; muted?: boolean }) {
   return <div className={`flex items-center justify-between border-t border-subtle py-1 text-small first:border-t-0 ${muted ? "text-fg-muted" : ""}`}><span>{k}</span><span className="font-mono tabular-nums">{muted && v === 0 ? "excluded" : v}</span></div>;
+}
+
+/** Declared flight profiles (the gate input), editable in planning. */
+function ProfilesRow({ missionId, profiles, editable }: { missionId: string; profiles: string[]; editable: boolean }) {
+  const [editing, setEditing] = useState(false);
+  const [sel, setSel] = useState<string[]>(profiles);
+  const toggle = (p: string) => setSel((s) => (s.includes(p) ? s.filter((x) => x !== p) : [...s, p]));
+
+  if (editing) {
+    return (
+      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+        {FLIGHT_PROFILES.map((p) => <Checkbox key={p} checked={sel.includes(p)} onChange={() => toggle(p)} label={FLIGHT_PROFILE_LABELS[p]} />)}
+        <Button variant="secondary" onClick={async () => { await setMissionProfilesAction(missionId, sel as FlightProfile[]); setEditing(false); }}>Save</Button>
+        <Button variant="ghost" onClick={() => { setSel(profiles); setEditing(false); }}>Cancel</Button>
+      </div>
+    );
+  }
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-small">
+      <span className="text-micro text-fg-muted">Flight profiles:</span>
+      {profiles.length ? profiles.map((p) => <span key={p} className="rounded-pill bg-bg-inset px-2 py-0.5 text-micro text-fg-secondary">{FLIGHT_PROFILE_LABELS[p as FlightProfile] ?? p}</span>) : <span className="text-micro text-fg-muted">none declared</span>}
+      {editable && <button type="button" onClick={() => setEditing(true)} className="text-micro text-accent">edit</button>}
+    </div>
+  );
+}
+
+const RESIDUAL_TONE: Record<string, string> = { low: "text-status-ok-fg", medium: "text-status-warn-fg", high: "text-status-danger-fg" };
+
+/** Mission risk assessments — list, create, and approve (the gate satisfiers). */
+function RiskPanel({
+  missionId,
+  rows,
+  gate,
+  canCreate,
+  canApprove,
+}: {
+  missionId: string;
+  rows: RiskAssessmentItem[];
+  gate: MissionDetail["readiness"]["riskGate"];
+  canCreate: boolean;
+  canApprove: boolean;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [signing, setSigning] = useState<RiskAssessmentItem | null>(null);
+  const meaning = signing
+    ? `I approve risk assessment ${signing.code} (${FLIGHT_PROFILE_LABELS[signing.profile]}) for this mission and accept the residual risk.`
+    : "";
+
+  return (
+    <Card title="Risk assessments">
+      {gate.required && (
+        <p className={`mb-2 text-micro ${gate.satisfied ? "text-status-ok-fg" : "text-status-danger-fg"}`}>
+          {gate.satisfied ? "Required assessments approved ✓" : `Required: ${gate.missingProfiles.map((p) => FLIGHT_PROFILE_LABELS[p as FlightProfile] ?? p).join(", ") || "an approved assessment"}`}
+        </p>
+      )}
+      {rows.length === 0 ? (
+        <p className="text-small text-fg-muted">No risk assessments yet.</p>
+      ) : (
+        <div className="flex flex-col">
+          {rows.map((ra) => (
+            <div key={ra.id} className="flex items-center gap-2 border-t border-subtle py-1.5 text-small first:border-t-0">
+              <span className="font-mono text-micro tabular-nums text-fg-secondary">{ra.code}</span>
+              <span className="rounded-pill bg-bg-inset px-2 py-0.5 text-micro text-fg-secondary">{FLIGHT_PROFILE_LABELS[ra.profile]}</span>
+              <span className="flex-1 truncate text-fg-primary">{ra.title}</span>
+              {ra.residualRisk && <span className={`text-micro font-medium ${RESIDUAL_TONE[ra.residualRisk] ?? ""}`}>{cap(ra.residualRisk)}</span>}
+              <StatusPill domain="document" status={ra.status === "approved" ? "effective" : "draft"} />
+              {ra.status === "draft" && canApprove && <Button variant="ghost" onClick={() => setSigning(ra)}>Approve…</Button>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {canCreate && (
+        adding ? (
+          <form action={createRiskAssessmentAction} className="mt-3 flex flex-col gap-2 border-t border-subtle pt-3">
+            <input type="hidden" name="missionId" value={missionId} />
+            <div className="flex flex-wrap gap-2">
+              <Field label="Profile">
+                <Select name="profile" defaultValue={gate.missingProfiles[0] ?? "bvlos"} options={FLIGHT_PROFILES.map((p) => ({ value: p, label: FLIGHT_PROFILE_LABELS[p] }))} />
+              </Field>
+              <Field label="Residual risk">
+                <Select name="residualRisk" defaultValue="medium" options={[{ value: "low", label: "Low" }, { value: "medium", label: "Medium" }, { value: "high", label: "High" }]} />
+              </Field>
+            </div>
+            <Field label="Title"><Input name="title" required placeholder="JSA — BVLOS corridor survey" /></Field>
+            <Field label="Hazards & mitigations"><Textarea name="hazards" rows={3} placeholder="Key hazards, mitigations, residual rationale…" /></Field>
+            <div className="flex gap-2"><Button type="submit" variant="primary">Create</Button><Button type="button" variant="ghost" onClick={() => setAdding(false)}>Cancel</Button></div>
+          </form>
+        ) : (
+          <div className="mt-3 border-t border-subtle pt-3"><Button variant="secondary" onClick={() => setAdding(true)}>+ Add risk assessment</Button></div>
+        )
+      )}
+
+      {signing && (
+        <SignatureCeremony
+          open={!!signing}
+          onClose={() => setSigning(null)}
+          meaning={meaning}
+          onSign={(proof) => approveRiskAssessmentAction(signing.id, missionId, meaning, proof)}
+        />
+      )}
+    </Card>
+  );
 }
