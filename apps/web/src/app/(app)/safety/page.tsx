@@ -4,6 +4,7 @@ import { getCurrentPersonId, getPersonRoles } from "@/server/rbac";
 import { listEnabledJurisdictions } from "@/server/org";
 import { listOccurrences } from "@/server/safety";
 import { JURISDICTIONS, missionBindableJurisdictions } from "@dronops/content";
+import { SafetyTabs } from "./SafetyTabs";
 import { SafetyView } from "./SafetyView";
 
 export default async function SafetyPage() {
@@ -28,5 +29,10 @@ export default async function SafetyPage() {
     // degrade
   }
 
-  return <SafetyView occurrences={occurrences} jurisdictions={jurisdictions} canManage={canManage} />;
+  return (
+    <div className="flex flex-col gap-4">
+      <SafetyTabs active="occurrences" />
+      <SafetyView occurrences={occurrences} jurisdictions={jurisdictions} canManage={canManage} />
+    </div>
+  );
 }
