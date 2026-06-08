@@ -33,6 +33,7 @@ import {
   type CrewReadiness,
   type Jurisdiction,
 } from "@dronops/shared";
+import { missionRiskGate } from "./risk-assessment";
 
 type MissionRow = typeof missions.$inferSelect;
 
@@ -165,6 +166,7 @@ export interface MissionDetail {
     title: string;
     jurisdiction: string;
     operationalCategory: string;
+    flightProfiles: string[];
     status: string;
     aircraftId: string | null;
     aircraftLabel: string | null;
@@ -187,6 +189,7 @@ export interface MissionDetail {
     blocked: boolean;
     requirementCounts: { baseline: number; high: number; low: number };
     gates: { type: string; clause: string }[];
+    riskGate: { required: boolean; satisfied: boolean; requiredProfiles: string[]; missingProfiles: string[]; reasons: string[] };
     crew: {
       missionCrewId: string | null;
       personId: string;
@@ -248,6 +251,7 @@ export async function getMissionDetail(orgId: string, id: string): Promise<Missi
     reasons: c.reasons,
   });
   const num = (v: unknown) => (v == null ? null : Number(v));
+  const riskGate = await missionRiskGate(orgId, { id: m.id, operationalCategory: m.operationalCategory, flightProfiles: m.flightProfiles as string[] | null });
   return {
     mission: {
       id: m.id,
@@ -255,6 +259,7 @@ export async function getMissionDetail(orgId: string, id: string): Promise<Missi
       title: m.title,
       jurisdiction: m.jurisdiction,
       operationalCategory: m.operationalCategory,
+      flightProfiles: (m.flightProfiles as string[] | null) ?? [],
       status: m.status,
       aircraftId: m.aircraftId,
       aircraftLabel,
@@ -277,6 +282,7 @@ export async function getMissionDetail(orgId: string, id: string): Promise<Missi
       blocked: r.blocked,
       requirementCounts: counts,
       gates: r.gates.map((g) => ({ type: g.type, clause: g.rule.clause })),
+      riskGate: { required: riskGate.required, satisfied: riskGate.satisfied, requiredProfiles: riskGate.requiredProfiles, missingProfiles: riskGate.missingProfiles, reasons: riskGate.reasons },
       crew: r.crew.map(crewView),
     },
     locations: locs.map((l) => ({ id: l.id, governorate: l.governorate, wilayat: l.wilayat, village: l.village, latitude: num(l.latitude), longitude: num(l.longitude), ceilingM: num(l.ceilingM) })),
@@ -403,6 +409,10 @@ export async function transitionMission(
     if (t.crewGate) {
       const r = await readinessFor(ctx.orgId, m);
       if (r.blocked) throw new Error(`Crew gate failed: ${r.blockingCrew.join(", ")} not fit (override required)`);
+    }
+    if (t.riskGate) {
+      const gate = await missionRiskGate(ctx.orgId, { id: m.id, operationalCategory: m.operationalCategory, flightProfiles: m.flightProfiles as string[] | null });
+      if (!gate.satisfied) throw new Error(`Risk-assessment gate failed: ${gate.reasons.join("; ")}`);
     }
     const patch: Partial<typeof missions.$inferInsert> = { status: to, updatedAt: new Date() };
     if (to === "approved") {

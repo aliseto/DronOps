@@ -29,12 +29,14 @@ export interface MissionTransition {
   label: string;
   /** When true, the crew currency/duty gate must pass (no un-overridden blocks). */
   crewGate?: boolean;
+  /** When true, the risk-assessment gate must pass (required profiles approved). */
+  riskGate?: boolean;
 }
 
 export const MISSION_TRANSITIONS: MissionTransition[] = [
   { from: "planning", to: "submitted_for_approval", role: "operations_team", label: "Submit for approval" },
   { from: "submitted_for_approval", to: "approval_in_progress", role: "approval_admin", label: "Start approval" },
-  { from: "approval_in_progress", to: "approved", role: "approval_admin", label: "Record approval" },
+  { from: "approval_in_progress", to: "approved", role: "approval_admin", label: "Record approval", riskGate: true },
   { from: "approval_in_progress", to: "rejected", role: "approval_admin", label: "Reject" },
   { from: "approval_in_progress", to: "withdrawn", role: "approval_admin", label: "Withdraw" },
   { from: "approved", to: "ready", role: "operations_team", label: "Mark ready", crewGate: true },
