@@ -72,6 +72,11 @@ export function OccurrenceDetailView({
             <span>· occurred <span className="font-mono">{fmtTs(detail.occurredAt)}</span></span>
           </div>
         </div>
+        {d.applicable && (
+          <Link href={`/print/occurrences/${detail.id}`} target="_blank" className="rounded-md border border-strong px-3 py-1.5 text-small text-fg-secondary hover:border-accent">
+            Export regulator report ↗
+          </Link>
+        )}
       </div>
 
       {/* Reporting-deadline banner — the headline. */}
