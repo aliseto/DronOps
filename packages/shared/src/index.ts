@@ -20,5 +20,6 @@ export * from "./compliance/audit-pack";
 export * from "./safety/occurrence";
 export * from "./safety/risk";
 export * from "./safety/risk-matrix";
+export * from "./safety/dashboard";
 // env is intentionally NOT re-exported here — import it from "@dronops/shared/env"
 // in server-only contexts to avoid pulling process.env into client bundles.
