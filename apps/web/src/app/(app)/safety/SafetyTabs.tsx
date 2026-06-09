@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-type Tab = "occurrences" | "hazards" | "dashboard";
+type Tab = "occurrences" | "hazards" | "dashboard" | "sora";
 
 /** Sub-navigation for the M3 Safety module. */
 export function SafetyTabs({ active }: { active: Tab }) {
@@ -19,6 +19,7 @@ export function SafetyTabs({ active }: { active: Tab }) {
       {tab("/safety", "occurrences", "Occurrences")}
       {tab("/safety/hazards", "hazards", "Hazard register")}
       {tab("/safety/dashboard", "dashboard", "Dashboard")}
+      {tab("/safety/sora", "sora", "SORA")}
     </nav>
   );
 }
