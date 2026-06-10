@@ -8,5 +8,5 @@ import { test, expect } from "@playwright/test";
 test("sora list is reachable and renders", async ({ page }) => {
   await page.goto("/safety/sora");
   await expect(page.getByRole("heading", { name: "SORA assessments" })).toBeVisible();
-  await expect(page.getByRole("navigation").getByRole("link", { name: "Dashboard" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Dashboard" })).toBeVisible();
 });
