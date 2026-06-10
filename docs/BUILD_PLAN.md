@@ -237,11 +237,21 @@ no hard delete). Draft edit = quality_manager|accountable_manager; sign =
 accountable_manager. Migration 0019 (draft_editable/signed_immutable/delete_blocked
 SQL-probed). NO financial/sales/HR inputs by design. KPIs are displayed pulls, not
 a new engine.
-**Next: M2 audit packs (bundle signed reviews + coverage + findings) · M3 Safety.**
+**M2 audit packs ✅ (PR-028)** — free-selection evidence bundles + print/PDF.
 
-**Then** (per v2 ordering): M2 Compliance (coverage
-matrix + NCR/CAPA closing the deviation→finding loop) · M3 Safety & occurrence
-engine · P0 hardening (notifications, dogfood migration, offline PWA, QA pass).
+**M3 Safety ✅ (PR-029–035)** — occurrence vertical (capture → deadline clock →
+investigation → escalate, PR-029) · risk-assessment mission gate (S-03, PR-030) ·
+hazard/risk register (S-02, PR-031) · safety performance dashboard (S-07,
+PR-032) · regulator occurrence-report export (S-06, PR-033) · SORA GRC/ARC→SAIL
+determination workflow (S-04, PR-034) · **OSO robustness assignment (PR-035)**:
+JARUS SORA 2.0 Table 6 (24 OSOs × SAIL I–VI) encoded in
+`@dronops/shared` safety/oso (single source of truth, invariant- and
+spot-tested), rendered on the SORA builder at the determined SAIL. Flag:
+Table 6 values cross-verified against three independent transcriptions —
+primary-PDF spot-check (jarus-rpas.org, Table 6 p. 29) recommended before a
+regulator-facing release.
+
+**Next: P0 hardening** (notifications, dogfood migration, offline PWA, QA pass).
 ✅ **30-day clock starts** at the end of hardening.
 
 ## 4. Phase 1+ (epic level)

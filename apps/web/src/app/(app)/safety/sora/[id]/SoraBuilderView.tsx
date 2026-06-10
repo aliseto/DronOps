@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Button, Card, Select, SignatureBlock, SignatureCeremony, StatusPill, Timeline, type TimelineEvent } from "@dronops/ui";
 import {
   determineSora,
+  osoRequirements,
+  OSO_GROUP_LABELS,
   SCENARIO_LABELS,
   UA_DIMENSION_BANDS,
   UA_DIMENSION_LABELS,
@@ -12,6 +14,8 @@ import {
   ARC_CLASSES,
   type ArcClass,
   type OperationalScenario,
+  type OsoGroup,
+  type OsoLevel,
   type Robustness,
   type UaDimensionBand,
 } from "@dronops/shared";
@@ -161,10 +165,69 @@ export function SoraBuilderView({
         </div>
       </div>
 
+      <OsoCard sail={det.sail} sailRoman={det.sailRoman} outOfScope={det.outOfScope} />
+
       {canApprove && !approved && (
         <SignatureCeremony open={signOpen} onClose={() => setSignOpen(false)} meaning={meaning} onSign={(proof) => approveSoraAction(detail.id, meaning, proof)} />
       )}
     </div>
+  );
+}
+
+const OSO_LEVEL_LABEL: Record<OsoLevel, string> = {
+  optional: "Optional",
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+};
+
+/**
+ * JARUS SORA 2.0 Table 6: the 24 OSOs at the determined SAIL. Derived from the
+ * SAIL (regulation is content, not rows) — at approval the inputs freeze, so
+ * this list is frozen with them.
+ */
+function OsoCard({ sail, sailRoman, outOfScope }: { sail: number; sailRoman: string; outOfScope: boolean }) {
+  const reqs = osoRequirements(sail);
+  if (outOfScope || reqs.length === 0) return null;
+  const groups = [...new Set(reqs.map((r) => r.group))] as OsoGroup[];
+  return (
+    <Card title={`OSO requirements at SAIL ${sailRoman}`}>
+      <p className="mb-2 text-micro text-fg-muted">
+        Recommended robustness per JARUS SORA 2.0 Table 6 (Optional / Low / Medium / High). The
+        competent authority may tailor the set.
+      </p>
+      <div className="grid grid-cols-1 gap-x-8 lg:grid-cols-2">
+        {groups.map((g) => (
+          <div key={g}>
+            <div className="mt-2 text-micro font-medium uppercase tracking-wide text-fg-muted">
+              {OSO_GROUP_LABELS[g]}
+            </div>
+            {reqs
+              .filter((r) => r.group === g)
+              .map((r) => (
+                <div
+                  key={r.no}
+                  className="flex items-center justify-between gap-3 border-b border-subtle py-1.5 last:border-0"
+                >
+                  <span className="text-small text-fg-secondary">
+                    <span className="font-mono text-micro text-fg-muted">
+                      OSO#{String(r.no).padStart(2, "0")}
+                    </span>{" "}
+                    {r.title}
+                  </span>
+                  <span
+                    className={`shrink-0 rounded-pill bg-inset px-2 py-0.5 font-mono text-micro tabular-nums ${
+                      r.level === "optional" ? "text-fg-muted" : "font-medium text-fg-primary"
+                    }`}
+                  >
+                    {OSO_LEVEL_LABEL[r.level]}
+                  </span>
+                </div>
+              ))}
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
 
