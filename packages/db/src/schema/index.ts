@@ -25,3 +25,4 @@ export * from "./audit-packs";
 export * from "./occurrences";
 export * from "./risk-assessments";
 export * from "./hazards";
+export * from "./sora-assessments";
