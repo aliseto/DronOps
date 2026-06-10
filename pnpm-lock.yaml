@@ -230,6 +230,9 @@ importers:
       '@dronops/shared':
         specifier: workspace:*
         version: link:../shared
+      dji-log-parser-js:
+        specifier: ^0.5.7
+        version: 0.5.7
     devDependencies:
       typescript:
         specifier: 'catalog:'
@@ -1996,6 +1999,10 @@ packages:
   detect-libc@2.1.2:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
+
+  dji-log-parser-js@0.5.7:
+    resolution: {integrity: sha512-Yx6eE79jgmqzZWoL8LmKXYkdAUwJa5PLJlADkkRvxt276PcTAtrj2sdJMWktmfQ7yIA5xompcGrZGu7idc441A==}
+    engines: {node: '>=18.0.0'}
 
   dom-accessibility-api@0.5.16:
     resolution: {integrity: sha512-X7BJ2yElsnOJ30pZF4uIIDfBEVgF4XEBxL9Bxhy6dnrm5hkzqmsWHGTiHqRiITNhMyFLyAiWndIJP7Z1NTteDg==}
@@ -4438,6 +4445,8 @@ snapshots:
   dequal@2.0.3: {}
 
   detect-libc@2.1.2: {}
+
+  dji-log-parser-js@0.5.7: {}
 
   dom-accessibility-api@0.5.16: {}
 
