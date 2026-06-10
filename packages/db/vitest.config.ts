@@ -12,5 +12,9 @@ export default defineConfig({
     name: "db",
     environment: "node",
     include: ["src/**/*.test.ts"],
+    // Isolation suites TRUNCATE … CASCADE shared parent tables (documents,
+    // persons, aircraft, missions) on cleanup — run files sequentially when
+    // pointed at a live database.
+    fileParallelism: false,
   },
 });

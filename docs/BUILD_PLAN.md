@@ -257,7 +257,14 @@ Unit (Vitest): tenancy/audit helpers, SoD rules, jurisdiction engine
 (table-driven against DRO-REG-001), content loader zod, hashing/canonicalization,
 currency + inspection math (as built). Golden-file parser suite (M6).
 Both-directions tenant-isolation tests for every org-scoped table (live SQL
-harness now; `tenantIsolationSuite` guarded on DATABASE_URL for CI). E2E
+harness now; `tenantIsolationSuite` guarded on DATABASE_URL for CI). The suite
+supports seeded FK parents (`seedSql`, neutral third org), `$N` per-insert
+uniqueness, and a one-row-per-org variant (UPDATE isolation) — all 38 org-scoped
+tables are covered (`organizations` excluded by design: self-keyed RLS, no
+app_user insert path; auth tables are RLS deny-all). **Flag: DronOps Dev is
+behind repo migrations — occurrences / hazards / audit_packs / risk_assessments
+tables missing; run `pnpm db:migrate` before the M3 suites can execute there.**
+E2E
 (Playwright): auth redirect + sign-in, app-shell nav, dual-theme, RTL smoke; the
 G8 end-to-end story test becomes the release gate as modules land.
 
