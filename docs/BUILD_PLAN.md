@@ -260,7 +260,14 @@ Table 6 values cross-verified against three independent transcriptions —
 primary-PDF spot-check (jarus-rpas.org, Table 6 p. 29) recommended before a
 regulator-facing release.
 
-**Next: P0 hardening** (notifications, dogfood migration, offline PWA, QA pass).
+**P0 hardening:** notifications ✅ (PR-037) · offline PWA ✅ (PR-038 —
+installable manifest + conservative offline shell (no authed data cached) +
+IndexedDB capture queue: occurrence quick-file offline → visible/inspectable
+queue banner → auto-sync on reconnect with device capture timestamp
+preserved (`reportedAt`); failed replays stay queued, never dropped; §15
+offline-queue e2e hook. Flags: branded raster icons pending; offline EDITS
+deferred until the conflict prompt exists) · dogfood migration (blocked on
+the prototype export) · QA pass.
 ✅ **30-day clock starts** at the end of hardening.
 
 ## 4. Phase 1+ (epic level)

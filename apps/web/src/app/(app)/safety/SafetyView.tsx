@@ -6,6 +6,7 @@ import { Button, Card, DataTable, EmptyState, Input, Select, StatusPill, Textare
 import type { OccurrenceListItem } from "@/server/safety";
 import { DeadlineChip } from "./DeadlineChip";
 import { fileOccurrenceAction } from "./actions";
+import { enqueueOccurrence } from "@/lib/offline/occurrence-queue";
 
 type Ncr = StatusVocab["ncr"];
 const fmt = (iso: string) => iso.slice(0, 10);
@@ -65,6 +66,13 @@ export function SafetyView({
           <form
             action={async (fd) => {
               if (jurisdictions.length === 1) fd.set("jurisdiction", jurisdictions[0]!.key);
+              // Field capture (UX §10): offline filings queue with the device
+              // timestamp and sync automatically — never lost, never blocked.
+              if (!navigator.onLine) {
+                await enqueueOccurrence(Object.fromEntries([...fd.entries()].map(([k, v]) => [k, String(v)])));
+                setAdding(false);
+                return;
+              }
               const id = await fileOccurrenceAction(fd);
               setAdding(false);
               router.push(`/safety/${id}`);

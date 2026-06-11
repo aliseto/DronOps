@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { themeInitScript } from "@dronops/ui";
 import { dirFor, type Locale } from "@/i18n/config";
+import { SwRegister } from "@/components/SwRegister";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
@@ -38,6 +39,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       </head>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
+          <SwRegister />
           {children}
         </NextIntlClientProvider>
       </body>

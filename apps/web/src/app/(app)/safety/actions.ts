@@ -37,6 +37,9 @@ export async function fileOccurrenceAction(formData: FormData) {
     jurisdiction,
     occurredAt: new Date(occurredAt),
   };
+  // Offline replays carry the device capture timestamp (preserved, UX §10).
+  const reportedAt = String(formData.get("reportedAt") ?? "").trim();
+  if (reportedAt) input.reportedAt = new Date(reportedAt);
   const id = await createOccurrence(c, input);
   revalidatePath("/safety");
   return id;
