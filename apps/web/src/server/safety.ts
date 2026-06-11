@@ -188,6 +188,8 @@ export interface CreateOccurrenceInput {
   description?: string;
   jurisdiction: string;
   occurredAt: Date;
+  /** Device capture time for offline-filed occurrences (UX §10) — defaults to now. */
+  reportedAt?: Date;
   missionId?: string;
   flightRecordId?: string;
   aircraftId?: string;
@@ -220,6 +222,7 @@ export async function createOccurrence(ctx: TenantCtx, input: CreateOccurrenceIn
         description: input.description,
         jurisdiction: input.jurisdiction,
         occurredAt: input.occurredAt,
+        ...(input.reportedAt ? { reportedAt: input.reportedAt } : {}),
         reportedByPersonId,
         missionId: input.missionId,
         flightRecordId: input.flightRecordId,
