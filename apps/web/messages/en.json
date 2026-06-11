@@ -24,7 +24,11 @@
       "title": "Dashboard",
       "description": "What needs you today.",
       "exceptions": "Exceptions",
-      "nothing": "Nothing needs your attention."
+      "nothing": "Nothing needs your attention.",
+      "overdue": "Overdue",
+      "dueSoon": "Due soon",
+      "open": "Open",
+      "needsYou": "needs you"
     },
     "settings": {
       "title": "Settings",

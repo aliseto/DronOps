@@ -18,6 +18,7 @@ export interface StatusVocab {
   coverage: "covered" | "partial" | "gap" | "n-a";
   external: "valid" | "review-due" | "expired";
   readiness: "fit" | "caution" | "not-fit" | "unknown";
+  obligation: "overdue" | "due-soon" | "open";
   lifecycle:
     | "planning"
     | "submitted_for_approval"
@@ -78,6 +79,11 @@ const REGISTRY: { [D in StatusDomain]: { [S in StatusVocab[D]]: Entry } } = {
     valid: { tone: "ok", label: "Valid" },
     "review-due": { tone: "warn", label: "Review due" },
     expired: { tone: "danger", label: "Expired" },
+  },
+  obligation: {
+    overdue: { tone: "danger", label: "Overdue" },
+    "due-soon": { tone: "warn", label: "Due soon" },
+    open: { tone: "neutral", label: "Open" },
   },
   readiness: {
     fit: { tone: "ok", label: "Fit to fly" },

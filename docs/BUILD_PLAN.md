@@ -94,8 +94,17 @@ Module tables (M1–M7) are added by their milestone PRs per §3.
   admin client this phase.
 - **Storage + service-role key** — wired in code; `SUPABASE_SERVICE_ROLE_KEY`
   provisioned per environment.
-- **Notifications / exceptions-first dashboard** — placeholder; lands at P0
-  hardening.
+- **Notifications / exceptions-first dashboard** ✅ (PR-037, P0) — in-app
+  obligations inbox on /dashboard: one role-aware aggregation
+  (`server/obligations.ts`) over every module's EXISTING exception logic
+  (acks due · approvals waiting · finding triage/CAPA · occurrence clocks ·
+  mission approval/crew blocks · fleet grounded/registration/maintenance ·
+  unsealed flights · crew readiness/credential expiry), grouped
+  overdue → due-soon → open via `@dronops/shared` obligations (derived state,
+  no job). Badge = open obligations (cleared by doing the work, not by
+  read-marks). **Email per-category opt-in still flagged — no provider.**
+  Per-module nav badges deferred (would put the full aggregate on every
+  layout render).
 
 ## 3. Forward sequence (modules)
 
