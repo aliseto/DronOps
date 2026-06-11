@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   Badge,
   Button,
@@ -11,6 +11,7 @@ import {
   Combobox,
   DataTable,
   Drawer,
+  EmptyState,
   Input,
   Modal,
   Select,
@@ -138,7 +139,20 @@ export function DocumentsView({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [category, setCategory] = useState<DocumentCategory | "all">("all");
+  const searchParams = useSearchParams();
+  // §15 release hook: filter persistence lives in the URL (?cat=), not state -
+  // a filtered view survives reload and is shareable. The panel param is kept.
+  const catParam = searchParams.get("cat");
+  const category: DocumentCategory | "all" =
+    catParam && (DOCUMENT_CATEGORIES as readonly string[]).includes(catParam)
+      ? (catParam as DocumentCategory)
+      : "all";
+  const setCategory = (c: DocumentCategory | "all") => {
+    const next = new URLSearchParams(searchParams.toString());
+    if (c === "all") next.delete("cat");
+    else next.set("cat", c);
+    router.replace(next.size ? `${pathname}?${next.toString()}` : pathname);
+  };
   const [newOpen, setNewOpen] = useState(false);
   const [signFor, setSignFor] = useState<Revision | null>(null);
 
@@ -230,7 +244,21 @@ export function DocumentsView({
           getRowId={(r) => r.id}
           onRowClick={(r) => open(r.id)}
           csvFileName="documents"
-          empty={<p className="text-small text-fg-muted">No documents yet. Create your first.</p>}
+          empty={
+            category === "all" ? (
+              <EmptyState variant="first-use" title="No documents yet" description="Create your first." />
+            ) : (
+              <EmptyState
+                variant="filtered"
+                title="No results for this filter"
+                action={
+                  <Button size="sm" variant="secondary" onClick={() => setCategory("all")}>
+                    Clear filter
+                  </Button>
+                }
+              />
+            )
+          }
         />
       </div>
 

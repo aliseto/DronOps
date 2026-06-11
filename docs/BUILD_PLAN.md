@@ -266,8 +266,14 @@ IndexedDB capture queue: occurrence quick-file offline → visible/inspectable
 queue banner → auto-sync on reconnect with device capture timestamp
 preserved (`reportedAt`); failed replays stay queued, never dropped; §15
 offline-queue e2e hook. Flags: branded raster icons pending; offline EDITS
-deferred until the conflict prompt exists) · dogfood migration (blocked on
-the prototype export) · QA pass.
+deferred until the conflict prompt exists) · QA pass part 1 ✅ (PR-039 —
+§15 hooks runnable WITHOUT a data layer: ceremony order (meaning before
+re-auth) · drawer focus-return (fixed in Drawer) · documents filter
+persistence moved to the URL (?cat=) · filtered-empty variant with clear
+filter wired · documents register made best-effort like other module pages.
+**Remaining QA — needs a seeded e2e environment (owner decision):** the G8
+end-to-end story release gate, gate-block + override-reason flow, row-level
+import errors) · dogfood migration (blocked on the prototype export).
 ✅ **30-day clock starts** at the end of hardening.
 
 ## 4. Phase 1+ (epic level)
