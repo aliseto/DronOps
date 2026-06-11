@@ -22,10 +22,24 @@ export function Drawer({
   footer?: ReactNode;
 }) {
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const returnFocusTo = useRef<HTMLElement | null>(null);
+
+  // §15 release hook: focus moves to the drawer on open and RETURNS to the
+  // originating element on close/unmount. Keyed on `open` only so parent
+  // re-renders (new onClose identity) never thrash focus.
+  useEffect(() => {
+    if (!open) return;
+    returnFocusTo.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    titleRef.current?.focus();
+    return () => {
+      returnFocusTo.current?.focus();
+      returnFocusTo.current = null;
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
-    titleRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
