@@ -56,6 +56,15 @@ export { DataTable, type Column, type DataTableProps } from "./data/DataTable";
 
 // Forms
 export { FormRenderer } from "./forms/FormRenderer";
+export {
+  visibleSections,
+  EMPTY_FORM_SCHEMA,
+  type FormSchema,
+  type SectionDef,
+  type FieldDef,
+  type FieldType,
+  type Bilingual,
+} from "./lib/form-schema";
 
 // Shell
 export { AppShell, type AppShellProps, type NavItem, type LinkComponent } from "./shell/AppShell";

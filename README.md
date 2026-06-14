@@ -1,24 +1,16 @@
-# DronOps
+# DronOps — design system
 
-Multi-tenant SaaS for licensed drone operators — UAV operations + QMS
-record-keeping compliant with multiple GCC regulators simultaneously (GCAA
-CAR-UAC, DCAA DCAR-UAS, GACA GACAR 107/48, ISO 9001). A product of **Aironov**.
-
-> Product thesis: **every flight audits itself** — telemetry-derived deviations
-> auto-raise nonconformities with evidence attached.
+The graphite dual-theme design system for **DronOps** (a product of Aironov):
+CSS-first design tokens + a React component kit. The application has been reset
+to a clean slate and will be rebuilt on top of this design system from a
+forthcoming design plan.
 
 ## Monorepo layout
 
-| Path                 | Purpose                                                       |
-| -------------------- | ------------------------------------------------------------ |
-| `apps/web`           | Next.js 15 (App Router) application                           |
-| `packages/db`        | Drizzle schema, RLS, `withTenant`/`withAudit` spine          |
-| `packages/ui`        | Design system: tokens + primitives (`@dronops/ui`)           |
-| `packages/content`   | Regulation-as-content (requirements, rules) — versioned data |
-| `packages/parsers`   | Flight-log parsers (CSV, DJI binary)                         |
-| `packages/shared`    | Pure helpers: env parsing, ids, result types, jurisdiction   |
-| `docs/`              | Build plan, design/UX systems, regulatory references         |
-| `reference/`         | Read-only prototype reference (never imported)               |
+| Path          | Purpose                                                         |
+| ------------- | -------------------------------------------------------------- |
+| `packages/ui` | Design system: tokens (`tokens.css`) + primitives (`@dronops/ui`) |
+| `docs/`       | `DESIGN_SYSTEM.md` (appearance) · `UX_SYSTEM.md` (behavior)    |
 
 ## Getting started
 
@@ -27,31 +19,22 @@ nvm use            # Node 22
 corepack enable    # pnpm 10
 pnpm install
 
-# Database (Supabase). Set env first — see .env.example
-pnpm db:migrate
-
-pnpm dev           # http://localhost:3000
+pnpm test          # component + token tests
+pnpm typecheck
+pnpm lint
 ```
 
-## Environment
+## The design system
 
-Copy `.env.example` to `.env` and fill in:
+`@dronops/ui` is self-contained (no cross-package dependencies). It ships:
 
-| Var                   | Purpose                                              |
-| --------------------- | ---------------------------------------------------- |
-| `DATABASE_URL`        | Pooled connection (port 6543), restricted app role   |
-| `DIRECT_DATABASE_URL` | Direct connection (port 5432), for migrations        |
-| `ADMIN_DATABASE_URL`  | Privileged connection (jobs/seed, bypasses RLS)      |
-| `AUTH_SECRET`         | Auth.js session secret                               |
-| `AUTH_URL`            | App origin (WebAuthn RP ID derives from this)        |
+- **Tokens** — `packages/ui/src/styles/tokens.css`: graphite neutrals + Aironov
+  teal accent, dark (default) + light + print themes, mapped to Tailwind v4
+  utilities via `@theme inline`.
+- **Primitives & composites** — Button, Input, Select/Combobox, DataTable,
+  Drawer, Modal, Toast, StatusPill (the only status renderer), EmptyState,
+  EvidenceChip, Stat, Tag, SignatureCeremony, and more.
 
-## Commands
-
-`pnpm dev` · `pnpm build` · `pnpm lint` · `pnpm typecheck` · `pnpm test` ·
-`pnpm test:e2e` · `pnpm db:generate` · `pnpm db:migrate` · `pnpm db:seed`
-
-## Conventions
-
-See [`CLAUDE.md`](./CLAUDE.md) for the hard rules (no hard deletes, tenant
-isolation, jurisdiction-as-record-property, SoD, immutability, regulation-as-
-content) that every change must respect.
+See [`docs/DESIGN_SYSTEM.md`](./docs/DESIGN_SYSTEM.md) and
+[`docs/UX_SYSTEM.md`](./docs/UX_SYSTEM.md) for the full appearance and behavior
+specs, and [`CLAUDE.md`](./CLAUDE.md) for the conventions every change respects.

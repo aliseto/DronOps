@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { sha256Hex } from "@dronops/shared";
+import { sha256Hex } from "../lib/hash";
 import { cn } from "../lib/cn";
 
 export interface UploadResult {

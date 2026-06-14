@@ -1,87 +1,62 @@
-# CLAUDE.md — DronOps (production)
+# CLAUDE.md — DronOps design system
 
-Repo instructions for Claude Code. Read first, then `docs/BUILD_PLAN.md`,
-`docs/DESIGN_SYSTEM.md` (appearance) and `docs/UX_SYSTEM.md` (behavior — its
-§15 test hooks are release criteria alongside the visual checks).
+Repo instructions for Claude Code. **This repository has been reset to the
+design system only.** The application (apps/web) and its data/domain packages
+were removed; they will be rebuilt from a forthcoming design plan. Until then,
+the deliverable here is the design system: `packages/ui` + `docs/DESIGN_SYSTEM.md`
+(appearance) and `docs/UX_SYSTEM.md` (behavior).
 
-## What this is
+Read `docs/DESIGN_SYSTEM.md` and `docs/UX_SYSTEM.md` first. The UX_SYSTEM §15
+test hooks are release criteria alongside the visual both-themes check.
+
+## What this is (product context)
 
 **DronOps** (product of Aironov): multi-tenant SaaS for licensed drone
 operators — UAV operations + QMS record-keeping compliant with multiple
-regulators simultaneously (GCAA CAR-UAC, DCAA DCAR-UAS, GACA GACAR 107/48,
-Oman CAA CAR-102/47 + AWR 033, ISO 9001). Product thesis: **every flight audits
-itself** — telemetry-derived
-deviations auto-raise nonconformities with evidence attached.
+regulators simultaneously (GCAA, DCAA, GACA, Oman CAA, ISO 9001). Product
+thesis: **every flight audits itself** — telemetry-derived deviations auto-raise
+nonconformities with evidence attached. The product spans seven modules
+(Documents, Compliance, Safety & Risk, Operations, Fleet, Flight Evidence,
+Personnel & Crew); the rebuild will re-introduce them from the new plan.
 
-Seven modules: M1 Documents · M2 Compliance · M3 Safety & Risk · M4 Operations ·
-M5 Fleet · M6 Flight Evidence · M7 Personnel & Crew.
+## Current stack
 
-## Authoritative references (in docs/)
+TypeScript strict · React 19 · Tailwind v4 CSS-first tokens · Vitest · pnpm +
+Turbo monorepo. `@dronops/ui` is self-contained — no cross-package deps.
 
-- `docs/AIR-PRD-001.md` — product spec; requirement IDs (D-01, C-04, O-02 …).
-- `docs/DRO-REG-001.md` — regulatory comparison & implementation matrix;
-  jurisdiction modes, deadline values (3h/72h/10d), retention (build-to-
-  strictest: 36 months), flight-record union schema, gate rules.
-- `docs/dronops_requirements_seed.sql` (+ `_oman_v1.1.sql`, `_iso_v1.2.sql`
-  addenda and `_operational_category_retag_v1.3.sql`) — 92 clause-anchored
-  requirement objects across 9 framework strings (incl. ISO 9001, kind
-  `standard`), each carrying `categoryNative` + `riskTier`
-  (baseline/low/high/management_system: totals 45/1/26/20); convert to
-  `packages/content` data via scripts/convert-seed.mjs, never hand-edit, and
-  never execute against the DB. The mission rule (M2 coverage / M4 gates) lives
-  in `@dronops/shared` `requirementsForMission` — high never mixes with low.
+## Design-system rules (always apply)
 
-## Stack (pinned)
+- **Tokens only.** Color carries meaning; all of it flows through semantic
+  tokens (`bg-surface`, `text-fg-muted`, `text-status-*`). Raw Tailwind
+  color-scale classes are banned by ESLint (see DESIGN_SYSTEM §2.7).
+- **StatusPill is the only way to render a record status.** Badge/Tag are for
+  counts and categories, never state.
+- Sentence case UI; identifiers in JetBrains Mono with tabular-nums.
+- Dark (default) + light theme, both first-class and verified; print is always
+  light. RTL-safe logical properties (`ms-`/`me-`/`ps-`/`pe-`), never `ml-`/`mr-`.
+- Respect `prefers-reduced-motion`; visible focus ring everywhere; WCAG AA in
+  both themes; state is color + icon + text, never color alone.
 
-Next.js 15 (App Router) + TypeScript strict · PostgreSQL + Drizzle (no Prisma) ·
-Auth.js v5 (+passkey re-auth for signatures) · Tailwind v4 CSS-first tokens ·
-Inngest (jobs) · S3-compatible object storage, content-addressed · next-intl
-(en, ar scaffold) · Vitest + Playwright · pnpm monorepo. Hosting: Vercel +
-Supabase.
+## When the app is rebuilt (carry forward)
 
-## Hard rules (never violate)
-
-1. **No hard deletes.** Append-only `audit_events` on every domain mutation,
-   written in the same transaction (`withAudit` / the `mutate()` wrapper).
-   Corrections = new events.
-2. **Tenant isolation on every query** via `withTenant`; Postgres RLS as
-   backstop (custom GUC `app.current_org_id` + restricted `app_user` role, NOT
-   Supabase Auth helpers). Isolation tests both directions for every new table.
-3. **Jurisdiction is a property of the record, not only the org.** Org settings
-   enable frameworks; each governed record binds ONE jurisdiction. Never
-   hardcode a regulator value — deadline hours, retention months, finding-level
-   defaults all come from `packages/content`.
-4. **Segregation of duties in the data layer** via SECURITY DEFINER functions.
-5. **Sealed/approved records are immutable**, enforced by triggers, not UI.
-6. **Form instances pin their template version.**
-7. **Evidence files immutable + SHA-256 content-addressed.**
-8. **Regulation is content, not code** — `packages/content` ships versioned
-   requirement/rule data.
-
-## Conventions
-
-- Sentence case UI; identifiers in JetBrains Mono with tabular-nums; StatusPill
-  is the only way to render a status.
-- Dark default + light theme, both verified per PR; print/PDF always light.
-- i18n-wrapped strings; RTL-safe logical properties; UTC storage, tenant-tz
-  display with tz visible on audit-relevant timestamps.
-- Multi-tenant SaaS from day one; billing parked behind a stub entitlement
-  interface.
-- Never run `drizzle-kit push` — RLS policies don't apply reliably via push.
-  Always `db:generate` → `db:migrate`.
+These product hard rules governed the prior build and should be re-established
+by the new plan: no hard deletes (append-only audit on every mutation); tenant
+isolation on every query (RLS backstop); jurisdiction is a property of the
+record, not only the org; segregation of duties in the data layer; sealed/
+approved records immutable via triggers; form instances pin their template
+version; evidence files immutable + SHA-256 content-addressed; regulation is
+content, not code.
 
 ## Commands
 
-`pnpm dev` · `pnpm db:generate` · `pnpm db:migrate` · `pnpm db:seed` ·
-`pnpm test` · `pnpm test:e2e` · `pnpm lint` · `pnpm typecheck`
+`pnpm test` · `pnpm typecheck` · `pnpm lint` · `pnpm format`
 
 ## Repo layout
 
-`apps/web` · `packages/db` · `packages/ui` · `packages/content` ·
-`packages/parsers` · `packages/shared` · `docs/` · `reference/`
+`packages/ui` (`@dronops/ui`) · `docs/` (DESIGN_SYSTEM, UX_SYSTEM) · `reference/`
 
 ## Definition of done (every PR)
 
-Typecheck/lint/tests green · tenant-isolation tests for new tables · audit event
-on new mutations · both themes verified · jurisdiction-mode behavior tested when
-touched · strings i18n-wrapped · PR description lists skipped/flagged items.
+Typecheck/lint/tests green · both themes verified when UI changes · strings
+sentence-case · tokens-only (no raw colors) · PR description lists skipped/
+flagged items.
