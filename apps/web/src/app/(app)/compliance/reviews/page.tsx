@@ -23,7 +23,7 @@ export default async function ReviewsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 p-6">
       <ComplianceTabs active="reviews" />
       <ReviewsView reviews={reviews} canManage={canManage} />
     </div>

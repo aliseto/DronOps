@@ -31,7 +31,7 @@ export default async function CoveragePage({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 p-6">
       <ComplianceTabs active="coverage" />
       <CoverageView matrix={matrix} documents={documents} canAssess={canAssess} selectedRef={selectedRef} />
     </div>

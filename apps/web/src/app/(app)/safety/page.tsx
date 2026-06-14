@@ -30,7 +30,7 @@ export default async function SafetyPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 p-6">
       <SafetyTabs active="occurrences" />
       <SafetyView occurrences={occurrences} jurisdictions={jurisdictions} canManage={canManage} />
     </div>

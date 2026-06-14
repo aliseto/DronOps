@@ -245,7 +245,7 @@ export function PersonnelView({
   ];
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 p-6">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-display text-fg-primary">Crew roster</h1>

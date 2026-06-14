@@ -52,7 +52,7 @@ export function FindingDetailView({
   const curIdx = LIFECYCLE.findIndex((s) => s.key === f.status);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 p-6">
       <div className="flex items-start justify-between gap-3">
         <div>
           <Link href="/compliance" className="text-micro text-fg-muted">← Findings</Link>
