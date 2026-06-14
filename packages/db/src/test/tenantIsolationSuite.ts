@@ -74,8 +74,12 @@ export function tenantIsolationSuite({
 
     it("isolates select + writes and forbids delete for app_user", async () => {
       if (seedSql) await sql.unsafe(seedSql);
-      // The whole scenario runs in one DO block so the role/GUC context holds.
-      const rows = await sql.unsafe<Array<{ ok: boolean }>>(`
+      // The whole scenario runs in one DO block so the role/GUC context holds;
+      // any isolation breach RAISEs, rejecting the promise (and failing the
+      // test). A single statement avoids postgres.js's multi-statement result
+      // nesting — the DO block is the assertion.
+      await expect(
+        sql.unsafe(`
         DO $$
         DECLARE visible int; blocked boolean; affected int;
         BEGIN
@@ -96,9 +100,8 @@ ${writeScenario}
 
           RESET ROLE;
         END $$;
-        SELECT true AS ok;
-      `);
-      expect(rows[0]?.ok).toBe(true);
+      `),
+      ).resolves.toBeDefined();
 
       // Cleanup (TRUNCATE bypasses row-level append-only triggers).
       await sql.unsafe(`TRUNCATE ${table} CASCADE`);
