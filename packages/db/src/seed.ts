@@ -14,7 +14,9 @@ import * as schema from "./schema";
  * the server-only request-path client.
  */
 
-const E2E_USER_ID = "e2e-user"; // matches the AUTH_E2E_BYPASS identity
+// Must match E2E_USER_ID in apps/web/src/auth.ts — a real UUID so the request
+// path can write it into uuid columns (audit_events.actor_user_id).
+const E2E_USER_ID = "00000000-0000-0000-e2e0-000000000000";
 const ORG = "00000000-0000-0000-e2e0-000000000001";
 const PERSON = "00000000-0000-0000-e2e0-000000000002";
 const DOC = "00000000-0000-0000-e2e0-000000000003";

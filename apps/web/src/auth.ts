@@ -13,7 +13,10 @@ const credentialsSchema = z.object({
 });
 
 // Controlled e2e sign-in (only when explicitly enabled, never in production):
-// lets Playwright exercise the gated app shell without a database.
+// lets Playwright exercise the gated app shell without a database. The id is a
+// real UUID so it satisfies uuid columns the request path writes (e.g.
+// audit_events.actor_user_id); the e2e seed links its org graph to this id.
+export const E2E_USER_ID = "00000000-0000-0000-e2e0-000000000000";
 function e2eUser(email: string, password: string) {
   if (
     process.env.AUTH_E2E_BYPASS === "1" &&
@@ -21,7 +24,7 @@ function e2eUser(email: string, password: string) {
     email === "e2e@dronops.test" &&
     password === "e2e-password"
   ) {
-    return { id: "e2e-user", email, name: "E2E User" };
+    return { id: E2E_USER_ID, email, name: "E2E User" };
   }
   return null;
 }
