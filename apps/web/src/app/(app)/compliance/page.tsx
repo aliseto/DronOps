@@ -34,7 +34,7 @@ export default async function CompliancePage({
   const open = findings.filter((f) => !["closed", "false-positive"].includes(f.status)).length;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 p-6">
       <ComplianceTabs active="findings" />
       <ComplianceView findings={findings} queueCount={queue} openCount={open} detail={detail} canTriage={canTriage} />
     </div>

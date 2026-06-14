@@ -16,7 +16,7 @@ export default async function SafetyDashboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 p-6">
       <SafetyTabs active="dashboard" />
       <SafetyDashboardView data={data} />
     </div>
