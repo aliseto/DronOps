@@ -18,6 +18,16 @@ export default async function SettingsPage() {
             </Button>
           </Link>
         </Card>
+        <Card title="Access & roles">
+          <p className="text-small text-fg-muted">
+            Link members to a person and assign domain roles (owner/admin only).
+          </p>
+          <Link href="/settings/access" className="mt-3 inline-block">
+            <Button variant="secondary" size="sm">
+              Manage access
+            </Button>
+          </Link>
+        </Card>
         <Card title="Security">
           <p className="text-small text-fg-muted">Passkeys for signing consequential actions.</p>
           <Link href="/settings/security" className="mt-3 inline-block">

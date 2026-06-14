@@ -12,6 +12,7 @@ import {
   DateField,
   Drawer,
   EmptyState,
+  EvidenceChip,
   FormField,
   IconButton,
   Input,
@@ -20,9 +21,11 @@ import {
   ReadinessVerdict,
   Select,
   Skeleton,
+  Stat,
   StatusPill,
   Switch,
   Tabs,
+  Tag,
   Textarea,
   ThemeToggle,
   Timeline,
@@ -124,6 +127,22 @@ function Showcase() {
         <StatusPill domain="lifecycle" status="flown" />
         <Badge tone="accent">accent</Badge>
         <Badge tone="external">external</Badge>
+        <Tag>KSA</Tag>
+        <Tag onRemove={() => {}} removeLabel="Remove multirotor filter">
+          Multirotor
+        </Tag>
+      </Section>
+
+      <Section title="Evidence grade & stats">
+        <EvidenceChip grade="telemetry" hash="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" />
+        <EvidenceChip grade="cloud" hash="9b934ca495991b7852b855e3b0c44298fc1c149afbf4c8996fb92427ae41e464" />
+        <EvidenceChip grade="manual" />
+        <Card className="w-44">
+          <Stat label="Open findings" value={7} tone="danger" hint="Computed 6 min ago" />
+        </Card>
+        <Card className="w-44">
+          <Stat label="Flight hours" value="128:30" unit="hh:mm" />
+        </Card>
       </Section>
 
       <Section title="Currency & readiness (M7)">
