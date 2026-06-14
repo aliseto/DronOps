@@ -12,30 +12,62 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    # A real Postgres so the tenant-isolation suites (CLAUDE.md rule 2) and the
+    # other DB-backed unit tests actually execute in CI instead of skipping.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: dronops
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dronops
+      ADMIN_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dronops
+      # Superuser connection: the isolation suites SET LOCAL ROLE app_user themselves.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dronops
     steps:
       - uses: actions/checkout@v4
-
       - uses: pnpm/action-setup@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-
       - name: Install
         run: pnpm install --frozen-lockfile
-
+      - name: Create Supabase-compatible roles (migration 0003 REVOKEs from them)
+        run: psql "$DIRECT_DATABASE_URL" -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN CREATE ROLE anon NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END \$\$; DO \$\$ BEGIN CREATE ROLE authenticated NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END \$\$;"
+      - name: Migrate
+        run: pnpm --filter @dronops/db db:migrate
+      - name: Provision app_user (CI only — migration creates it NOLOGIN)
+        run: psql "$DIRECT_DATABASE_URL" -v ON_ERROR_STOP=1 -c "ALTER ROLE app_user WITH LOGIN PASSWORD 'app_user_ci'; GRANT app_user TO postgres WITH SET TRUE;"
       - name: Typecheck
         run: pnpm typecheck
-
       - name: Lint
         run: pnpm lint
-
-      - name: Unit tests
+      - name: Unit tests (DB-backed isolation suites run here)
         run: pnpm test
 
   e2e:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: dronops
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dronops
+      ADMIN_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dronops
+      # Request path runs as the restricted app_user role (RLS enforced live).
+      DATABASE_URL: postgresql://app_user:app_user_ci@localhost:5432/dronops
+      # Unlocks the G8 release-gate story (skipped without a seeded DB).
+      E2E_SEEDED: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -47,5 +79,20 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
-      - name: E2E tests
+      - name: Create Supabase-compatible roles (migration 0003 REVOKEs from them)
+        run: psql "$DIRECT_DATABASE_URL" -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN CREATE ROLE anon NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END \$\$; DO \$\$ BEGIN CREATE ROLE authenticated NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END \$\$;"
+      - name: Migrate
+        run: pnpm --filter @dronops/db db:migrate
+      - name: Provision app_user (CI only — migration creates it NOLOGIN)
+        run: psql "$DIRECT_DATABASE_URL" -v ON_ERROR_STOP=1 -c "ALTER ROLE app_user WITH LOGIN PASSWORD 'app_user_ci'; GRANT app_user TO postgres WITH SET TRUE;"
+      - name: Seed e2e data
+        run: pnpm --filter @dronops/db db:seed
+      - name: E2E tests (incl. the G8 release gate)
         run: pnpm test:e2e
+      - name: Upload screenshots (both themes)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: test-results/**/*.png
+          if-no-files-found: ignore

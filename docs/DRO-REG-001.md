@@ -1,18 +1,16 @@
-> Extracted text of the source document `DRO-REG-001` (originally .docx).
-> This is a readable reference copy for engineering; the original .docx remains
-> the authoritative artifact. Table layout is approximated with ` | ` separators.
+> Extracted text of DRO-REG-001 v2.0 (originally .docx). Readable engineering reference; original .docx is authoritative. Tables approximated with ` | `.
 
 DRONOPS  by Aironov
 
 Regulatory Reference
 GCC UAS Regulatory Comparison & Platform Implementation Matrix
-GCAA CAR-UAC · DCAA DCAR-UAS · GACA GACAR Part 107 / Part 48 / AC 107-01 — mapped to DronOps jurisdiction modes, record schemas, gates, clocks and packs.
+GCAA CAR-UAC · DCAA DCAR-UAS · GACA GACAR 107/48/AC · Oman CAA CAR-102/CAR-47/AWR 033 — mapped to DronOps jurisdiction modes, record schemas, gates, clocks and packs.
 
 Document ID
  | DRO-REG-001
  |
 Revision
- | 1.0 (Draft for QM review)
+ | 2.0 (Draft for QM review) — adds Oman (CAA)
  |
 Date
  | 07 June 2026
@@ -24,7 +22,7 @@ Source basis
  | Documents on file as listed in §1.1; paraphrased summaries are not legal advice
  |
 Linked assets
- | requirement_defs seed v1.0 · AIR-PRD-001 v0.2 · DronOps jurisdiction settings
+ | requirement_defs seed v1.0 + Oman addendum v1.1 · AIR-PRD-001 v0.2 · DronOps jurisdiction settings
  |
 Classification
  | Internal — Confidential
@@ -67,6 +65,21 @@ GACA (KSA)
  | Current
  | KSA (guidance)
  |
+CAA (Oman)
+ | CAR-102 — Remote Piloted Aircraft (Drones)
+ | v0.20 (JNC revised amendment — confirm current issue)
+ | Oman
+ |
+CAA (Oman)
+ | CAR-47 — Aircraft Registration Marks
+ | Rev 05
+ | Oman
+ |
+CAA (Oman)
+ | AWR 033 — Drone Permit Application (+ May 2026 resumption circular: green zones / Serb platform)
+ | Rev 8
+ | Oman (guidance)
+ |
 
 1.2 Authority hierarchy — the Dubai dual layer
 A Dubai-based operator answers to two regulators simultaneously: DCAA under Dubai Law No. 11 of 2020 and Law No. 4 of 2020 (local authority for UAS in the Emirate), and the GCAA federal layer (CAR-UAC) for UAE-wide obligations. CAR-UAC itself repeatedly defers to “GCAA or LAA, as the case” — the Local Aviation Authority, which in Dubai is the DCAA. Abu Dhabi-based operations follow CAR-UAC with their own LAA arrangements. KSA is single-layer under GACA.
@@ -89,6 +102,10 @@ UAE-Dubai
 KSA
  | GACAR 107 + Part 48 + AC 107-01 sets · 10-day occurrence clock + NTSC routing · §107.71 recency gate · Part 48 registration expiry gate (3-yr / 6-month window) · 3-year logbook & UOC record retention · SMS evidence expectations · Subpart E declaration workspace
  | GACA OA/UOC pack
+ |
+Oman
+ | CAR-102 / CAR-47 / AWR 033 requirement sets · permit-per-operation workspace (AWR 033 structure: per-location coordinates, ≤122 m ceiling, flight window, permit number & type) · immediate + 3-day occurrence clocks · 36-month liability-records rule · green-zone (Serb) check field · Chief Remote Pilot postholder · media-attribution mission condition
+ | Oman CAA permit & surveillance pack
  |
 ISO 9001:2015
  | QMS clause set: documented information (7.5), operational control (8.5), internal audit (9.2), management review (9.3), nonconformity & corrective action (10.2)
@@ -503,50 +520,102 @@ Platform implementation
 Insurance as external documents subtype with expiry + scope flags (DG coverage y/n); KSA mode warns when a mission's operation type implies coverage scope the policy record lacks; expiring insurance blocks new mission approval (override pattern) since both UAC.015b and §107.171 condition operations on coverage.
 Declaration workspace (KSA mode): DoC records linking the UAS model, the performance standard, supporting evidence files, validity, and §107.211 documentation made available to owners; retention per §107.213. This is also the architecture STS-class declared operations will use.
 Information security (AC 107-01): satisfied by the platform's own controls — RLS tenancy, RBAC, audit trail — documented as a coverage-matrix evidence note pointing at the Settings 'Data & security' card.
-14. Module × Mode Behavior Matrix
+14. Oman (CAA) — Permit-Based Regime
+Oman regulates UAS under CAR-102 (Remote Piloted Aircraft), with registration marks under CAR-47 and a per-operation permit administered via form AWR 033. After a blanket suspension (3 March 2026), the CAA resumed permit issuance effective 25 May 2026 for governmental, commercial and recreational operations within designated green zones identified on the Serb platform. The regime is single-layer (CAA only) and permit-centric: where the other three regimes authorize an operator, Oman additionally authorizes each operation.
+14.1 Comparison against the other regimes
+Aspect
+ | Oman (CAR-102 / AWR 033)
+ | Nearest equivalent elsewhere
+ |
+Authorization model
+ | Per-operation permit (AWR 033: new/extension/renewal; per-location coordinates; flight window) on top of ROC certification for certain operations (CAR 102.065, Subpart F)
+ | DCAA OA-per-mission is closest; GCAA/GACA authorize the operator with airspace approvals per operation
+ |
+Records
+ | Operational records control, protection from damage/alteration/theft, 24 months (CAR 102.115 — wording matches GCAA/DCAA); PLUS liability-relevant records 36 months (CAR 102.025(12))
+ | UAE 24-month rules; KSA 3-year rules — Oman's 36-month liability rule lands at the platform's build-to-strictest value
+ |
+Occurrence reporting
+ | Immediate to 24-hour CAA Flight Safety (accidents/serious: injury, crash, jeopardy to aircraft/public); listed incident types within 3 days via the CAA incident reporting system
+ | Two-tier like GCAA (3-hour accidents + ROSI); deadlines differ: immediate / 72 h / 3 d / 10 d across the four regimes
+ |
+Personnel
+ | Remote pilot certification (Subpart D) and Remote Pilot Licence (Subpart E); medical condition and incapacitation rules (102.185/190); Chief Remote Pilot postholder with defined duties (102.320); compliance with operator procedures (102.335)
+ | Postholder duty closest to GACA §107.117 Ops Manager; procedure-compliance clause mirrors GACA §107.145
+ |
+Aircraft
+ | Five-class size classification (102.010); maintenance & safe condition (102.180); Large RPA certificate, maintenance and approval (102.050–070); registration marks under CAR-47; manufacturer declarations (Subpart I)
+ | Class-based like EU/DCAA basic-advanced thinking; declaration regime echoes GACA Subpart E
+ |
+Operating constraints
+ | Approved areas only / green zones (102.020 + Serb); populous-area prohibition (102.075); controlled-airspace special approval with sense-and-avoid (102.150/240); 122 m ceiling on permits (AWR 033); autonomous ops conditions (102.125); C2 link service provider requirements (102.135)
+ | Green-zone model is unique among the four; 122 m ≈ the common 400 ft ceiling
+ |
+Distinctive quirks
+ | Media announcements of drone operations must credit CAA authorization (AWR 033); falsification clause (102.015)
+ | Falsification mirrors GACA §107.5
+ |
+
+Platform implementation (Oman mode)
+Permit workspace (M4): mission approval-basis for Oman missions follows the AWR 033 structure: permit type (new/extension/renewal), permit number, per-location rows (governorate, wilayat, village, lat/long — the mission's sites map directly), required operational altitude with a 122 m AGL/MSL hard default on the ceiling field, and the proposed flying window. The mission pack renders an AWR-033-aligned annex so the permit application and the mission record are the same data.
+Deadline engine: two Oman clocks — 'immediate' (rendered as report-now with the 24-hour Flight Safety contacts surfaced on the occurrence) for accidents/serious incidents, and 3 calendar days for listed incident types.
+Retention: the 36-month liability-records rule (102.025(12)) is exactly the platform's build-to-strictest default — no engine change; the retention display cites the Oman clause for Oman-jurisdiction records.
+Gates and fields: green-zone confirmation is a required pre-approval field on Oman missions (manual check against the Serb platform, recorded with who/when — no API integration assumed); populous-area and controlled-airspace flags route to the risk-assessment and special-approval paths; the media-attribution rule renders as a standing mission condition on Oman missions.
+Personnel: Oman credential kinds (remote pilot certification, RPL) join the wallet; Chief Remote Pilot maps to the ops_manager domain role with a postholder label; medical credential required for currency in Oman mode.
+Version caution: the CAR-102 text on file is a draft amendment revision (v0.20, JNC 2021). Before any regulator-facing assertion or content-pack release, confirm the currently promulgated issue with Oman CAA — and note the post-resumption framework (green zones, Serb) is circular-based and may evolve faster than the CAR text.
+ |
+15. Module × Mode Behavior Matrix
 Module
  | UAE-Federal on
  | UAE-Dubai on
  | KSA on
+ | Oman on
  |
 M1 Documents
  | UOA certificate tracking; procedures accessible to staff
  | DUOSAM OM templates; distribution + acks; revision lists
  | §107.117 library view; LEP/amendment log; §107.211 manuals for declared UAS
+ | ROC documentation; operator procedures (102.335); permit certificates as EXT
  |
 M2 Compliance
- | CAR-UAC requirement set; 7/60/90-day CAPA defaults; UOA renewal checklist
+ | CAR-UAC set; 7/60/90-day CAPA defaults; UOA renewal checklist
  | DCAR + DUOSAM sets; safety-meeting minutes as reviews
  | GACAR/Part 48/AC sets; SMS sub-requirements mapped; OA/UOC pack
+ | CAR-102/47/AWR sets; CAA permit & surveillance pack
  |
 M3 Safety & Risk
- | 3-hour accident clock; ROSI categories; follow-up via CAPA
+ | 3-hour accident clock; ROSI categories
  | 72-hour clock; DCAA categories; ERP records
- | 10-day clock; NTSC routing; ORA profile; SMS analysis loop
+ | 10-day clock; NTSC routing; ORA profile; SMS loop
+ | Immediate clock + 24-h contacts; 3-day incident clock; populous-area RA path
  |
 M4 Operations
- | Airspace-approval reference required; controlled-release log
- | Basic/advanced category; OA-per-mission reference; flight-area limitations; pilot log sign-off at reconcile
- | Open/Specific; §107.133 conditions field; §107.57 preflight template; flight-rules field required
+ | Airspace-approval reference; controlled-release log
+ | Basic/advanced category; OA-per-mission; flight-area limits; pilot log sign-off
+ | Open/Specific; §107.133 conditions; §107.57 preflight; flight-rules field
+ | AWR 033 permit workspace (locations, ≤122 m, window, permit no.); green-zone check; media-attribution condition
  |
 M5 Fleet
  | Registration + insurance pre-operation check
- | Asset registration register incl. GCS/payloads; firmware update control; flight-test evidence
- | Part 48 expiry gate (3 yr / 6-month window); unique-identifier field; AC logbook schema; ownership-transfer export
+ | Asset registration incl. GCS/payloads; firmware control
+ | Part 48 expiry gate; identifier field; AC logbook schema; transfer export
+ | Five-class classification field; CAR-47 marks; Large-RPA cert tracking; safe-condition (102.180)
  |
 M6 Flight Evidence
  | AMC 015h fields validated; GPS route retained
- | Pilot signature required to reconcile; inspection-completion rule
+ | Pilot signature to reconcile; inspection-completion rule
  | §107.57 fields validated; 3-year retention clock
+ | Permit-window conformance rule; 122 m ceiling rule; 36-month liability retention display
  |
 M7 Personnel
  | GCAA licence kind; competence evidence
- | Authorized-personnel list exports; duty/rest engine (OSO#17); employment-end retention clock
- | RPC/endorsement kinds; §107.71 recency gate; written crew authorizations
+ | Authorized-personnel exports; duty/rest engine; retention clock
+ | RPC/endorsement kinds; §107.71 recency gate; written authorizations
+ | RP certification + RPL kinds; medical gate (102.185); Chief Remote Pilot postholder
  |
 
-15. Build Decisions and Open Items
-15.1 Strictest-rule decisions (locked)
+16. Build Decisions and Open Items
+16.1 Strictest-rule decisions (locked)
 Dimension
  | Rule built
  | Rationale
@@ -572,12 +641,14 @@ Reporting deadlines
  | Deadlines are legal obligations, not preferences
  |
 
-15.2 Open items requiring confirmation
+16.2 Open items requiring confirmation
 DCAA authorization validity period: “as defined by the DCAA” — confirm current practice and configure the renewal reminder accordingly.
 GCAA ROSI occurrence taxonomy: align the in-app category list with current ROSI submission categories at next GCAA touchpoint.
 DUOSAM OSO#17 numeric duty/rest limits: extract the specific hour values from the OM template tables into the duty scheme configuration (values present in source; transcribe at duty-engine build).
 GACA STS standard-scenario specifics: AC 107-01 covers advanced-operation guidance; STS-B1 declaration record requirements to be confirmed against the STS publication when issued/obtained, then added to the KSA pack as a content update.
 Abu Dhabi: CAR-UAC federal layer is covered; any ADCAA emirate-level instrument would be added as a further framework if operations require it.
+Oman — CAR-102 issue status: the text on file is draft amendment v0.20 (2021); confirm the promulgated current issue with Oman CAA before content-pack release.
+Oman — green zones: Serb platform zone data is not integrated; the green-zone confirmation is a manual recorded check. Monitor post-resumption circulars for changes to the permit regime.
 
 Content governance: this document and the requirement_defs seed are revision-controlled together. When any source regulation revs, the comparison tables, the seed, and the mode behaviors update as one change package, peer-reviewed against the source text — the platform's own M1 discipline applied to its content.
  |

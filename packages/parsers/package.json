@@ -8,12 +8,15 @@
   },
   "scripts": {
     "lint": "eslint .",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@dronops/shared": "workspace:*"
+    "@dronops/shared": "workspace:*",
+    "dji-log-parser-js": "^0.5.7"
   },
   "devDependencies": {
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

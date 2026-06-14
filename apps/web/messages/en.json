@@ -24,12 +24,20 @@
       "title": "Dashboard",
       "description": "What needs you today.",
       "exceptions": "Exceptions",
-      "nothing": "Nothing needs your attention."
+      "nothing": "Nothing needs your attention.",
+      "overdue": "Overdue",
+      "dueSoon": "Due soon",
+      "open": "Open",
+      "needsYou": "needs you"
     },
     "settings": {
       "title": "Settings",
       "description": "Organization, jurisdictions and security.",
       "jurisdictionsNote": "Jurisdiction enablement and onboarding land in PR-006."
+    },
+    "offline": {
+      "title": "You're offline",
+      "description": "DronOps needs a connection for records. Field captures queue on the device and sync automatically when you're back online."
     }
   },
   "modules": {

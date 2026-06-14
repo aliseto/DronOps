@@ -7,8 +7,9 @@ test("app shell renders nav and navigates between modules", async ({ page }) => 
   await expect(nav).toBeVisible();
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 
-  // StatusPill showcase renders (single status source).
-  await expect(page.getByText("Sealed")).toBeVisible();
+  // Exceptions-first dashboard: the obligations card renders whether the inbox
+  // is empty (good-empty) or seeded (CI) — assert the always-present section.
+  await expect(page.getByText("Exceptions")).toBeVisible();
 
   // Navigate to a module via the rail.
   await nav.getByRole("link", { name: "Fleet" }).click();

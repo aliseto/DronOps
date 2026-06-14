@@ -3,11 +3,20 @@ import { REQUIREMENTS, getRequirement } from "./index";
 import { RECORD_TYPES } from "./types";
 
 describe("requirement content", () => {
-  // The uploaded seed v1.0 (2026-06-07) contains 54 clause-anchored requirements
-  // (the earlier "52" note predates this seed). Assert the real seed count.
+  // Seed v1.0 (54) + Oman addendum v1.1 (18) + ISO addendum v1.2 (20) = 92
+  // clause-anchored requirements across 7 frameworks. If the parse yields any
+  // other count, that's a converter/parse bug to catch — not a number to soften.
   it("loads every requirement with unique ids", () => {
-    expect(REQUIREMENTS).toHaveLength(54);
-    expect(new Set(REQUIREMENTS.map((r) => r.id)).size).toBe(54);
+    expect(REQUIREMENTS).toHaveLength(92);
+    expect(new Set(REQUIREMENTS.map((r) => r.id)).size).toBe(92);
+  });
+
+  it("includes the Oman addendum with correct derivation", () => {
+    const oman = REQUIREMENTS.filter((r) => r.jurisdiction === "Oman");
+    expect(oman).toHaveLength(18);
+    expect(getRequirement("CAR102:025-12")?.kind).toBe("regulation");
+    expect(getRequirement("AWR033:PERMIT")?.kind).toBe("guidance");
+    expect(getRequirement("CAR47:MARKS")?.jurisdiction).toBe("Oman");
   });
 
   it("uses only the record-type vocabulary", () => {
@@ -18,9 +27,15 @@ describe("requirement content", () => {
   });
 
   it("derives kind and jurisdiction per the seed rules", () => {
+    const guidanceFrameworks = new Set(["GACA AC 107-01", "CAA AWR 033"]);
+    const standardFrameworks = new Set(["ISO 9001"]);
     for (const r of REQUIREMENTS) {
-      if (r.framework === "GACA AC 107-01") expect(r.kind).toBe("guidance");
-      else expect(r.kind).toBe("regulation");
+      const expected = standardFrameworks.has(r.framework)
+        ? "standard"
+        : guidanceFrameworks.has(r.framework)
+          ? "guidance"
+          : "regulation";
+      expect(r.kind).toBe(expected);
     }
     expect(getRequirement("CARUAC:015h")?.jurisdiction).toBe("UAE-Federal");
     expect(getRequirement("DCAR:OM-OCC72")?.jurisdiction).toBe("UAE-Dubai");
@@ -39,7 +54,39 @@ describe("requirement content", () => {
     expect(occ72?.summary).toContain("72 hours");
   });
 
-  it("does not invent ISO requirements (separate authoring task)", () => {
-    expect(REQUIREMENTS.filter((r) => r.jurisdiction === "ISO")).toHaveLength(0);
+  it("includes the ISO 9001 addendum as a standard (not a regulator)", () => {
+    const iso = REQUIREMENTS.filter((r) => r.jurisdiction === "ISO");
+    expect(iso).toHaveLength(20);
+    for (const r of iso) {
+      expect(r.framework).toBe("ISO 9001");
+      expect(r.kind).toBe("standard");
+    }
+    expect(getRequirement("ISO9001:4.1")?.kind).toBe("standard");
+  });
+
+  it("operational-category re-tag v1.3: every requirement is tagged, none null", () => {
+    for (const r of REQUIREMENTS) {
+      expect(r.riskTier, r.id).toBeTruthy();
+      expect(["baseline", "low", "high", "management_system"]).toContain(r.riskTier);
+      expect(r.categoryNative, r.id).toBeTruthy();
+    }
+  });
+
+  it("risk_tier totals are baseline 45 · low 1 · high 26 · management_system 20 (=92)", () => {
+    const count = (t: string) => REQUIREMENTS.filter((r) => r.riskTier === t).length;
+    const tally = {
+      baseline: count("baseline"),
+      low: count("low"),
+      high: count("high"),
+      management_system: count("management_system"),
+    };
+    expect(tally).toEqual({ baseline: 45, low: 1, high: 26, management_system: 20 });
+    expect(tally.baseline + tally.low + tally.high + tally.management_system).toBe(92);
+  });
+
+  it("ISO requirements are management_system (never mission-tiered)", () => {
+    for (const r of REQUIREMENTS.filter((r) => r.framework === "ISO 9001")) {
+      expect(r.riskTier).toBe("management_system");
+    }
   });
 });

@@ -1,13 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   Badge,
   Button,
   Card,
+  Checkbox,
+  Combobox,
   DataTable,
   Drawer,
+  EmptyState,
   Input,
   Modal,
   Select,
@@ -22,17 +26,38 @@ import {
 import {
   CATEGORY_LABEL,
   DOCUMENT_CATEGORIES,
+  DOMAIN_ROLES,
+  DOMAIN_ROLE_LABELS,
   type DocumentCategory,
   type DocumentStatusResult,
   type RevisionStatus,
 } from "@dronops/shared";
 import {
+  acknowledgeAction,
   approveRevisionAction,
   createDocumentAction,
+  distributeAction,
   newRevisionAction,
   replaceExternalAction,
   submitForReviewAction,
 } from "./actions";
+
+interface DistItem {
+  id: string;
+  audienceType: "role" | "person";
+  audienceLabel: string;
+  ackRequired: boolean;
+  dueAt: string | null;
+  total: number;
+  acked: number;
+  overdue: boolean;
+  mine: boolean;
+  ackedByMe: boolean;
+}
+interface Person {
+  id: string;
+  name: string;
+}
 
 type DocStatus = StatusVocab["document"];
 const REV_TO_PILL: Record<RevisionStatus, DocStatus> = {
@@ -99,16 +124,35 @@ export function DocumentsView({
   canApprove,
   exceptions,
   history,
+  currentRevisionId,
+  persons,
+  distributions,
 }: {
   docs: ListItem[];
   detail: Detail | null;
   canApprove: boolean;
   exceptions: Exceptions;
   history: TimelineEvent[];
+  currentRevisionId: string | null;
+  persons: Person[];
+  distributions: DistItem[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [category, setCategory] = useState<DocumentCategory | "all">("all");
+  const searchParams = useSearchParams();
+  // §15 release hook: filter persistence lives in the URL (?cat=), not state -
+  // a filtered view survives reload and is shareable. The panel param is kept.
+  const catParam = searchParams.get("cat");
+  const category: DocumentCategory | "all" =
+    catParam && (DOCUMENT_CATEGORIES as readonly string[]).includes(catParam)
+      ? (catParam as DocumentCategory)
+      : "all";
+  const setCategory = (c: DocumentCategory | "all") => {
+    const next = new URLSearchParams(searchParams.toString());
+    if (c === "all") next.delete("cat");
+    else next.set("cat", c);
+    router.replace(next.size ? `${pathname}?${next.toString()}` : pathname);
+  };
   const [newOpen, setNewOpen] = useState(false);
   const [signFor, setSignFor] = useState<Revision | null>(null);
 
@@ -166,7 +210,15 @@ export function DocumentsView({
             </p>
           )}
         </div>
-        <Button onClick={() => setNewOpen(true)}>New document</Button>
+        <div className="flex items-center gap-2">
+          <Link href="/documents/manual-suite">
+            <Button variant="secondary">Load manual suite</Button>
+          </Link>
+          <Link href="/documents/forms">
+            <Button variant="secondary">Form templates</Button>
+          </Link>
+          <Button onClick={() => setNewOpen(true)}>New document</Button>
+        </div>
       </div>
 
       <div className="p-6">
@@ -192,7 +244,21 @@ export function DocumentsView({
           getRowId={(r) => r.id}
           onRowClick={(r) => open(r.id)}
           csvFileName="documents"
-          empty={<p className="text-small text-fg-muted">No documents yet. Create your first.</p>}
+          empty={
+            category === "all" ? (
+              <EmptyState variant="first-use" title="No documents yet" description="Create your first." />
+            ) : (
+              <EmptyState
+                variant="filtered"
+                title="No results for this filter"
+                action={
+                  <Button size="sm" variant="secondary" onClick={() => setCategory("all")}>
+                    Clear filter
+                  </Button>
+                }
+              />
+            )
+          }
         />
       </div>
 
@@ -203,6 +269,9 @@ export function DocumentsView({
           detail={detail}
           canApprove={canApprove}
           history={history}
+          currentRevisionId={currentRevisionId}
+          persons={persons}
+          distributions={distributions}
           onClose={close}
           onApprove={(rev) => setSignFor(rev)}
         />
@@ -271,18 +340,26 @@ function RevisionDrawer({
   detail,
   canApprove,
   history,
+  currentRevisionId,
+  persons,
+  distributions,
   onClose,
   onApprove,
 }: {
   detail: Detail;
   canApprove: boolean;
   history: TimelineEvent[];
+  currentRevisionId: string | null;
+  persons: Person[];
+  distributions: DistItem[];
   onClose: () => void;
   onApprove: (rev: Revision) => void;
 }) {
   const { document: doc, revisions, requirements } = detail;
   const external = doc.category === "external";
   const [tab, setTab] = useState("overview");
+  const [audienceType, setAudienceType] = useState<"role" | "person">("role");
+  const [personRef, setPersonRef] = useState("");
 
   const current = [...revisions].reverse().find((r) => r.status === "approved");
   const inReview = revisions.find((r) => r.status === "in_review");
@@ -308,6 +385,7 @@ function RevisionDrawer({
           { value: "overview", label: "Overview" },
           { value: "revisions", label: "Revisions" },
           { value: "requirements", label: "Requirements" },
+          ...(external ? [] : [{ value: "distribution", label: "Distribution" }]),
           { value: "history", label: "History" },
         ]}
       />
@@ -437,6 +515,97 @@ function RevisionDrawer({
             </div>
           )}
         </Card>
+      )}
+
+      {tab === "distribution" && (
+        <div className="flex flex-col gap-4">
+          {currentRevisionId ? (
+            <Card title="Distribute current revision">
+              <form
+                action={distributeAction.bind(null, currentRevisionId)}
+                className="flex flex-col gap-3"
+              >
+                <label className="flex flex-col gap-1 text-small text-fg-secondary">
+                  Audience
+                  <Select
+                    name="audienceType"
+                    value={audienceType}
+                    onChange={(e) => setAudienceType(e.target.value as "role" | "person")}
+                    options={[
+                      { value: "role", label: "By role" },
+                      { value: "person", label: "By person" },
+                    ]}
+                  />
+                </label>
+                {audienceType === "role" ? (
+                  <label className="flex flex-col gap-1 text-small text-fg-secondary">
+                    Role
+                    <Select
+                      name="audienceRef"
+                      options={DOMAIN_ROLES.map((r) => ({ value: r, label: DOMAIN_ROLE_LABELS[r] }))}
+                    />
+                  </label>
+                ) : (
+                  <>
+                    <input type="hidden" name="audienceRef" value={personRef} />
+                    <span className="text-small text-fg-secondary">Person</span>
+                    <Combobox
+                      items={persons.map((p) => ({ value: p.id, label: p.name }))}
+                      value={personRef}
+                      onValueChange={setPersonRef}
+                    />
+                  </>
+                )}
+                <Checkbox name="ackRequired" label="Acknowledgement required" defaultChecked />
+                <label className="flex flex-col gap-1 text-small text-fg-secondary">
+                  Due date
+                  <Input name="dueAt" type="date" />
+                </label>
+                <Button size="sm" type="submit" className="self-start">
+                  Distribute
+                </Button>
+              </form>
+            </Card>
+          ) : (
+            <p className="text-small text-fg-muted">Approve a revision before distributing.</p>
+          )}
+
+          <Card title="Distributions">
+            {distributions.length === 0 ? (
+              <p className="text-small text-fg-muted">Not distributed yet.</p>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {distributions.map((d) => (
+                  <li
+                    key={d.id}
+                    className="flex items-center justify-between border-b border-subtle pb-2 text-small"
+                  >
+                    <span className="text-fg-primary">
+                      {d.audienceLabel}
+                      <span className="ms-2 text-micro text-fg-muted">
+                        {d.ackRequired ? `${d.acked}/${d.total} acked` : "no ack required"}
+                        {d.dueAt ? ` · due ${new Date(d.dueAt).toLocaleDateString()}` : ""}
+                      </span>
+                    </span>
+                    <span className="flex items-center gap-2">
+                      {d.overdue && <StatusPill domain="currency" status="lapsed" detail="overdue" />}
+                      {d.mine && d.ackRequired && !d.ackedByMe && (
+                        <form action={acknowledgeAction.bind(null, d.id)}>
+                          <Button size="sm" type="submit">
+                            Acknowledge
+                          </Button>
+                        </form>
+                      )}
+                      {d.mine && d.ackedByMe && (
+                        <StatusPill domain="currency" status="current" detail="acked" />
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
       )}
 
       {tab === "history" && (

@@ -13,6 +13,7 @@
   "dependencies": {
     "@dronops/content": "workspace:*",
     "@dronops/db": "workspace:*",
+    "@dronops/parsers": "workspace:*",
     "@dronops/shared": "workspace:*",
     "@dronops/ui": "workspace:*",
     "@simplewebauthn/browser": "catalog:",
@@ -20,6 +21,7 @@
     "@supabase/supabase-js": "^2.47.0",
     "bcryptjs": "^2.4.3",
     "drizzle-orm": "catalog:",
+    "inngest": "catalog:",
     "next": "catalog:",
     "next-auth": "catalog:",
     "next-intl": "catalog:",
