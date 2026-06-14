@@ -1,7 +1,7 @@
 import "server-only";
 import { and, eq } from "drizzle-orm";
 import { getAdminDb } from "@dronops/db";
-import { userPersons, personRoles } from "@dronops/db/schema";
+import { memberships, userPersons, personRoles } from "@dronops/db/schema";
 import type { DomainRole } from "@dronops/shared";
 
 /**
@@ -61,5 +61,32 @@ export async function requireAnyRole(
 ): Promise<void> {
   if (!(await hasAnyRole(orgId, userId, roles))) {
     throw new Error(`This action requires one of: ${roles.join(", ")}.`);
+  }
+}
+
+/**
+ * Platform-access role (memberships.role), NOT a domain role. Access management
+ * is gated on this so a fresh org owner — who has no domain roles yet — can
+ * still link people and grant domain roles (bootstrap, no chicken-and-egg).
+ */
+export async function getMembershipRole(orgId: string, userId: string): Promise<string | null> {
+  const [row] = await getAdminDb()
+    .select({ role: memberships.role })
+    .from(memberships)
+    .where(
+      and(eq(memberships.orgId, orgId), eq(memberships.userId, userId), eq(memberships.status, "active")),
+    )
+    .limit(1);
+  return row?.role ?? null;
+}
+
+export async function isOrgAdmin(orgId: string, userId: string): Promise<boolean> {
+  const role = await getMembershipRole(orgId, userId);
+  return role === "owner" || role === "admin";
+}
+
+export async function requireOrgAdmin(orgId: string, userId: string): Promise<void> {
+  if (!(await isOrgAdmin(orgId, userId))) {
+    throw new Error("This action requires an organization owner or admin.");
   }
 }
