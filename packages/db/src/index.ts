@@ -3,4 +3,9 @@ export { getDb, getAdminDb, type AppDatabase, type Tx } from "./client";
 export { withTenant, type TenantCtx } from "./helpers/with-tenant";
 export { withAudit, type AuditEntry } from "./helpers/with-audit";
 export { mutate } from "./helpers/mutate";
+export {
+  ensureAuditPartitions,
+  partitionsToEnsure,
+  type PartitionSpec,
+} from "./maintenance/partitions";
 export * as schema from "./schema";
