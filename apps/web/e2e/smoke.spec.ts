@@ -1,21 +1,27 @@
 import { test, expect } from "@playwright/test";
 
-test("home page renders the foundation badge", async ({ page }) => {
-  await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.getByTestId("foundation-badge")).toBeVisible();
+// The chromium project is authenticated by default (storageState from setup).
+// These smoke tests cover the PUBLIC entry, so run them signed-out.
+test.describe("public entry", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test("home redirects unauthenticated visitors to sign in", async ({ page }) => {
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/signin$/);
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  });
+
+  test("public pages default to dark theme", async ({ page }) => {
+    await page.goto("/signin");
+    const html = page.locator("html");
+    await expect(html).toHaveAttribute("data-theme", "dark");
+    await expect(html).toHaveAttribute("lang", "en");
+    await page.screenshot({ path: "test-results/signin-dark.png", fullPage: true });
+  });
 });
 
-test("defaults to dark theme and toggles to light", async ({ page }) => {
+// Signed-in (default project state): the home route lands in the app.
+test("home sends authenticated users to the dashboard", async ({ page }) => {
   await page.goto("/");
-  const html = page.locator("html");
-  await expect(html).toHaveAttribute("data-theme", "dark");
-  await expect(html).toHaveAttribute("lang", "en");
-
-  await page.screenshot({ path: "test-results/home-dark.png", fullPage: true });
-
-  await page.getByRole("button", { name: /switch to light theme/i }).click();
-  await expect(html).toHaveAttribute("data-theme", "light");
-
-  await page.screenshot({ path: "test-results/home-light.png", fullPage: true });
+  await expect(page).toHaveURL(/\/dashboard$/);
 });
