@@ -37,6 +37,8 @@ jobs:
           cache: pnpm
       - name: Install
         run: pnpm install --frozen-lockfile
+      - name: Create Supabase-compatible roles (migration 0003 REVOKEs from them)
+        run: psql "$DIRECT_DATABASE_URL" -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN CREATE ROLE anon NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END \$\$; DO \$\$ BEGIN CREATE ROLE authenticated NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END \$\$;"
       - name: Migrate
         run: pnpm --filter @dronops/db db:migrate
       - name: Provision app_user (CI only — migration creates it NOLOGIN)
@@ -77,6 +79,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
+      - name: Create Supabase-compatible roles (migration 0003 REVOKEs from them)
+        run: psql "$DIRECT_DATABASE_URL" -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN CREATE ROLE anon NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END \$\$; DO \$\$ BEGIN CREATE ROLE authenticated NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END \$\$;"
       - name: Migrate
         run: pnpm --filter @dronops/db db:migrate
       - name: Provision app_user (CI only — migration creates it NOLOGIN)
