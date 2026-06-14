@@ -87,8 +87,16 @@ Module tables (M1–M7) are added by their milestone PRs per §3.
 
 ## 2. Remaining open foundation items (flagged, not blocking)
 
-- **Inngest** — config/skeleton only; no jobs wired yet (first needed at M6
-  ingestion / partition roll-forward / currency snapshots).
+- **Inngest** — runtime live (PR-040, P0): client + `/api/inngest` serve route
+  + first real job, **audit_events partition roll-forward** (monthly cron +
+  `audit/partitions.ensure` event; `ensureAuditPartitions` in `@dronops/db`
+  keeps 3 months of partitions ahead so rows never reach the DEFAULT catch-all —
+  which would defeat pruning and trap the month). Pure `partitionsToEnsure`
+  unit-tested; DDL validated live (rolled back) past the 2027-12 cliff. Next
+  jobs (deadline-escalation sweep, currency snapshots) register the same way.
+  **Flag: cron only fires once the Inngest app is connected to a runtime
+  (Inngest Cloud key or self-hosted) per environment — until then run the
+  ensure event manually / via the live harness.**
 - **`app_user` runtime connection** — LOGIN + password provisioned per
   environment; RLS proven via the live SQL harness. Onboarding/auth/files use the
   admin client this phase.
