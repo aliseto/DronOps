@@ -279,9 +279,22 @@ deferred until the conflict prompt exists) · QA pass part 1 ✅ (PR-039 —
 re-auth) · drawer focus-return (fixed in Drawer) · documents filter
 persistence moved to the URL (?cat=) · filtered-empty variant with clear
 filter wired · documents register made best-effort like other module pages.
-**Remaining QA — needs a seeded e2e environment (owner decision):** the G8
-end-to-end story release gate, gate-block + override-reason flow, row-level
-import errors) · dogfood migration (blocked on the prototype export).
+QA pass part 2 ✅ (PR-041 — seeded CI Postgres): CI now spins up `postgres:17`
+in both jobs. The **verify** job migrates + provisions `app_user` (LOGIN, and
+`GRANT app_user TO postgres WITH SET TRUE`) + the Supabase-compat `anon`/
+`authenticated` roles, so the **38 tenant-isolation suites now actually run in
+CI** instead of skipping (this surfaced + fixed a latent harness bug: postgres.js
+returns a result set PER statement, so the old `rows[0].ok` read the DO block's
+empty result — the DO block's RAISE is now the assertion). The **e2e** job
+migrates + seeds (`db:seed` builds the AUTH_E2E_BYPASS org/person/role graph +
+an in-review document) and runs the **G8 end-to-end story release gate**
+(`g8.spec.ts`, gated on `E2E_SEEDED`): signed-in operator → dashboard resolves
+the org and shows real obligations → Documents register → file an occurrence →
+persists + reads back. Whole chain validated on a local Postgres; the G8
+browser run is CI-only (sandbox blocks browser download). Remaining §15 hooks
+(gate-block + override-reason, row-level import errors) ride the next QA PR on
+this seeded harness. **dogfood migration** still blocked on the prototype
+export.
 ✅ **30-day clock starts** at the end of hardening.
 
 ## 4. Phase 1+ (epic level)

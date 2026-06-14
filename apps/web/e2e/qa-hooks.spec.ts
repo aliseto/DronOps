@@ -41,5 +41,7 @@ test("empty-state variants: filtered-empty offers clear filter", async ({ page }
   await expect(page.getByText("No results for this filter")).toBeVisible();
   await page.getByRole("button", { name: "Clear filter" }).click();
   await expect(page).not.toHaveURL(/cat=/);
-  await expect(page.getByText("No documents yet")).toBeVisible();
+  // After clearing, the filtered-empty message is gone — invariant whether the
+  // register is empty (no-DB) or seeded (CI shows the document).
+  await expect(page.getByText("No results for this filter")).toHaveCount(0);
 });
