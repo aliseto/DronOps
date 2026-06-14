@@ -1,23 +1,9 @@
-import { useTranslations } from "next-intl";
-import { ThemeToggle } from "@dronops/ui";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/session";
 
-export default function HomePage() {
-  const t = useTranslations("home");
-  return (
-    <main className="mx-auto max-w-2xl p-12">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-title font-semibold text-fg-primary">{t("title")}</h1>
-          <p className="mt-1 text-body text-fg-muted">{t("subtitle")}</p>
-        </div>
-        <ThemeToggle className="rounded-md border border-default bg-surface px-3 py-1.5 text-small text-fg-secondary hover:bg-hover" />
-      </div>
-      <p
-        data-testid="foundation-badge"
-        className="mt-6 inline-block rounded-pill border border-subtle bg-inset px-3 py-1 font-mono text-mono text-status-ok-fg"
-      >
-        {t("foundation")}
-      </p>
-    </main>
-  );
+/** The app has no public marketing page: send visitors to sign in, and
+ * already-authenticated users straight to their dashboard. */
+export default async function HomePage() {
+  const user = await getCurrentUser().catch(() => null);
+  redirect(user?.id ? "/dashboard" : "/signin");
 }
