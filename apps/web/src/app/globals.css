@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+/* Generate the utilities used inside the design-system package too. */
+@source "../../../../packages/ui/src";
+
+/* DronOps design system: tokens (graphite dual theme, @theme inline) + base. */
+@import "@dronops/ui/tokens.css";
+@import "@dronops/ui/styles.css";

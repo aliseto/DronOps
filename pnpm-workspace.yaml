@@ -1,4 +1,5 @@
 packages:
+  - "apps/*"
   - "packages/*"
 
 # Single source of truth for shared dependency versions across the monorepo.
@@ -12,20 +13,37 @@ catalog:
   prettier: ^3.4.0
   typescript: ^5.7.0
   typescript-eslint: ^8.18.0
+  tsx: ^4.19.2
+  dotenv: ^16.4.7
 
-  # React
+  # React / Next
   "@types/react": ^19.0.0
   "@types/react-dom": ^19.0.0
   react: ^19.0.0
   react-dom: ^19.0.0
+  next: ^15.1.0
+
+  # Data layer
+  drizzle-orm: ^0.38.0
+  postgres: ^3.4.5
+
+  # Supabase
+  "@supabase/supabase-js": ^2.46.0
+  "@supabase/ssr": ^0.5.2
+
+  # Validation
+  zod: ^3.24.0
 
   # Styling
   tailwindcss: ^4.0.0
+  "@tailwindcss/postcss": ^4.0.0
 
   # Testing
   vitest: ^2.1.0
 
 # Allow these dependencies' install scripts to run (pnpm 10 blocks by default).
-# esbuild fetches its platform binary (needed by vitest/tsx).
+# esbuild fetches its platform binary (needed by vitest/tsx); sharp powers
+# Next.js image optimisation.
 onlyBuiltDependencies:
   - esbuild
+  - sharp

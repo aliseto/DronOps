@@ -25,5 +25,35 @@ jobs:
         run: pnpm typecheck
       - name: Lint
         run: pnpm lint
-      - name: Test
+      - name: Unit tests
         run: pnpm test
+
+  db:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: dom
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      # Plain Postgres: the migrate runner installs an auth shim, then 0001→0003.
+      DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dom
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dom
+      APPLY_AUTH_SHIM: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Migrate (auth shim + 0001..0003)
+        run: pnpm --filter @dom/db migrate
+      - name: Two-tier RLS isolation suite
+        run: pnpm --filter @dom/db test
