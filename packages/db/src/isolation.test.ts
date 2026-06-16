@@ -77,4 +77,43 @@ run("two-tier RLS isolation", () => {
       ),
     ).rejects.toThrow(/last administrator/i);
   });
+
+  it("an org member sees only their org, not a sibling org in the same tenant", async () => {
+    const [t] = await admin<{ id: string }[]>`
+      insert into public.tenants (name) values (${`T ${tag}`}) returning id`;
+    const [x] = await admin<{ id: string }[]>`
+      insert into public.organisations (tenant_id, name) values (${t!.id}, ${`Org X ${tag}`}) returning id`;
+    await admin`insert into public.organisations (tenant_id, name) values (${t!.id}, ${`Org Y ${tag}`})`;
+    const member = await makeUser(`m-${tag}@example.com`);
+    await admin`insert into public.user_org_roles (user_id, org_id, role) values (${member}, ${x!.id}, 'viewer')`;
+
+    const seen = await withRlsSession(conn, { sub: member, email: `m-${tag}@example.com` }, (db) =>
+      db.select().from(organisations),
+    );
+    expect(seen.length).toBe(1);
+    expect(seen[0]!.id).toBe(x!.id);
+  });
+
+  it("audit_log is tenant-isolated and append-only", async () => {
+    const [t] = await admin<{ id: string }[]>`
+      insert into public.tenants (name) values (${`AT ${tag}`}) returning id`;
+    const [o] = await admin<{ id: string }[]>`
+      insert into public.organisations (tenant_id, name) values (${t!.id}, ${`AO ${tag}`}) returning id`;
+    await admin`insert into public.audit_log (tenant_id, org_id, entity, action) values (${t!.id}, ${o!.id}, 'documents', 'INSERT')`;
+
+    const outsider = await makeUser(`out-${tag}@example.com`);
+    const claims = { sub: outsider, email: `out-${tag}@example.com` };
+
+    // a user in an unrelated tenant cannot see this org's audit rows
+    const visible = await withRlsSession(conn, claims, async (db) => {
+      const rows = await db.execute(sql`select count(*)::int as n from public.audit_log where org_id = ${o!.id}`);
+      return (rows[0] as { n: number }).n;
+    });
+    expect(visible).toBe(0);
+
+    // append-only: DELETE is rejected (privilege revoked)
+    await expect(
+      withRlsSession(conn, claims, (db) => db.execute(sql`delete from public.audit_log where org_id = ${o!.id}`)),
+    ).rejects.toThrow();
+  });
 });
