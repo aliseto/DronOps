@@ -363,3 +363,74 @@ export const approvedAircraft = pgTable("approved_aircraft", {
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ── M3 Operations & Flight Log ───────────────────────────────────────────────
+
+export const operationType = pgEnum("operation_type", ["flight", "mission"]);
+export const operationStatus = pgEnum("operation_status", [
+  "draft",
+  "planned",
+  "approved",
+  "completed",
+  "cancelled",
+]);
+
+export const projects = pgTable("projects", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull(),
+  refCode: text("ref_code"),
+  name: text("name").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  startDate: date("start_date"),
+  endDate: date("end_date"),
+  clientId: uuid("client_id"),
+  projectLeadId: uuid("project_lead_id"),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const operations = pgTable("operations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull(),
+  projectId: uuid("project_id"),
+  refCode: text("ref_code"),
+  type: operationType("type").notNull(),
+  title: text("title").notNull(),
+  status: operationStatus("status").notNull().default("draft"),
+  operationCategory: text("operation_category"),
+  plannedStart: timestamp("planned_start", { withTimezone: true }),
+  plannedEnd: timestamp("planned_end", { withTimezone: true }),
+  maxAltitudeM: numeric("max_altitude_m"),
+  siteName: text("site_name"),
+  submittedBy: uuid("submitted_by"),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  approvingAuthority: text("approving_authority"),
+  approvalReference: text("approval_reference"),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  approvedBy: uuid("approved_by"),
+  cancellationReason: text("cancellation_reason"),
+  descriptor: jsonb("descriptor").notNull().default({}),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const flights = pgTable("flights", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull(),
+  operationId: uuid("operation_id"),
+  projectId: uuid("project_id"),
+  refCode: text("ref_code"),
+  pilotPersonnelId: uuid("pilot_personnel_id"),
+  droneId: uuid("drone_id"),
+  batteryId: uuid("battery_id"),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
+  durationS: integer("duration_s"),
+  isNight: boolean("is_night").notNull().default(false),
+  source: text("source").notNull().default("manual"),
+  siteName: text("site_name"),
+  maxAltitudeM: numeric("max_altitude_m"),
+  hasDeviation: boolean("has_deviation").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
