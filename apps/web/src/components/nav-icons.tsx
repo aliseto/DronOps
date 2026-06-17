@@ -25,6 +25,11 @@ export const OrgIcon = base(
     <path d="M19 21V11l-6-4" />
   </>,
 );
+export const OpsIcon = base(
+  <>
+    <path d="M3 11l19-9-9 19-2-8-8-2z" />
+  </>,
+);
 export const FleetIcon = base(
   <>
     <path d="M3 7l9-4 9 4-9 4-9-4z" />
