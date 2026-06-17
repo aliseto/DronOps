@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { FormSchema, FieldDef, Bilingual } from "@dronops/shared";
-import { visibleSections } from "@dronops/shared";
+import type { FormSchema, FieldDef, Bilingual } from "../lib/form-schema";
+import { visibleSections } from "../lib/form-schema";
 import { cn } from "../lib/cn";
 
 const label = (b: Bilingual, locale: "en" | "ar") => (locale === "ar" && b.ar ? b.ar : b.en);

@@ -1,13 +1,8 @@
 @import "tailwindcss";
 
-/* Design tokens + base component styles from the UI package. */
+/* Generate the utilities used inside the design-system package too. */
+@source "../../../../packages/ui/src";
+
+/* DronOps design system: tokens (graphite dual theme, @theme inline) + base. */
 @import "@dronops/ui/tokens.css";
 @import "@dronops/ui/styles.css";
-
-/* Monorepo: Tailwind must scan the UI package too, or utilities used only
- * inside @dronops/ui get tree-shaken away. */
-@source "../../../../packages/ui/src/**/*.{ts,tsx}";
-
-/* Theme switching is attribute-based (data-theme on <html>), not class-based. */
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
-@custom-variant print (&:where([data-theme="print"], [data-theme="print"] *));

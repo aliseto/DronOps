@@ -1,35 +1,46 @@
-import "server-only";
+import { drizzle } from "drizzle-orm/postgres-js";
+import { sql as sqlTag } from "drizzle-orm";
 import postgres from "postgres";
-import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "./schema";
+import * as schema from "./schema/index";
 
-export type AppDatabase = PostgresJsDatabase<typeof schema>;
-/** A transaction handle — the only thing withTenant hands to callers. */
-export type Tx = Parameters<Parameters<AppDatabase["transaction"]>[0]>[0];
+export type Database = ReturnType<typeof createDb>;
 
-// postgres.js connects lazily (first query), so constructing with a placeholder
-// when env is absent lets `next build` import server modules without DB secrets;
-// a real query fails clearly at runtime if misconfigured.
-const PLACEHOLDER = "postgresql://placeholder:placeholder@127.0.0.1:5432/placeholder";
+/** A raw postgres.js connection. Reuse one per process. */
+export function createSql(connectionString: string, opts?: postgres.Options<Record<string, never>>) {
+  return postgres(connectionString, { prepare: false, ...opts });
+}
 
-function make(url: string | undefined): AppDatabase {
-  // prepare:false is mandatory on Supabase's transaction pooler (reused conns).
-  const sql = postgres(url ?? PLACEHOLDER, { prepare: false });
+/** Drizzle bound to a connection. */
+export function createDb(sql: postgres.Sql) {
   return drizzle(sql, { schema });
 }
 
-let _app: AppDatabase | undefined;
-let _admin: AppDatabase | undefined;
-
-/** Request-path client: connects as the restricted app_user role (RLS enforced). */
-export function getDb(): AppDatabase {
-  if (!_app) _app = make(process.env.DATABASE_URL);
-  return _app;
+export interface RlsClaims {
+  /** auth.uid() reads this. */
+  sub: string;
+  /** auth.email() reads this (strict invite email-match). */
+  email: string;
+  role?: string;
 }
 
-/** Privileged client (bypasses RLS): auth/identity, jobs and seed. Never the
- * tenant request path. */
-export function getAdminDb(): AppDatabase {
-  if (!_admin) _admin = make(process.env.ADMIN_DATABASE_URL);
-  return _admin;
+/**
+ * Run `fn` inside a transaction with the Supabase-compatible request claims set,
+ * as the `authenticated` role, so the two-tier RLS policies (which read
+ * auth.uid()/auth.email()) enforce isolation. Uses Drizzle's transaction API so
+ * the tx is a proper Drizzle handle. The connecting role must be able to
+ * `set local role authenticated`.
+ */
+export async function withRlsSession<T>(
+  sql: postgres.Sql,
+  claims: RlsClaims,
+  fn: (db: Database) => Promise<T>,
+): Promise<T> {
+  const db = createDb(sql);
+  return db.transaction(async (tx) => {
+    await tx.execute(
+      sqlTag`select set_config('request.jwt.claims', ${JSON.stringify(claims)}, true)`,
+    );
+    await tx.execute(sqlTag`set local role authenticated`);
+    return fn(tx as unknown as Database);
+  });
 }

@@ -1,1 +1,0 @@
-ALTER TABLE "duty_records" ADD COLUMN "extra_flight_areas" integer DEFAULT 0 NOT NULL;

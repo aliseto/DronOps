@@ -1,12 +1,11 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
-import { useTranslations } from "next-intl";
-import { AppShell, Button, ThemeToggle, type LinkComponent, type NavItem } from "@dronops/ui";
-import { FOOTER_NAV, PRIMARY_NAV, type NavConfigItem } from "./nav-config";
+import { AppShell, ThemeToggle, type LinkComponent, type NavItem } from "@dronops/ui";
+import { DashboardIcon, MembersIcon, OrgIcon, SettingsIcon } from "./nav-icons";
+import { SignOutButton } from "./SignOutButton";
 
 const LinkAdapter: LinkComponent = ({ href, className, children, ...rest }) => (
   <Link href={href} className={className} {...rest}>
@@ -14,31 +13,33 @@ const LinkAdapter: LinkComponent = ({ href, className, children, ...rest }) => (
   </Link>
 );
 
-export function AppNav({ children }: { children: ReactNode }) {
+type NavDef = { href: string; label: string; icon: ComponentType<{ width?: number; height?: number }> };
+
+const NAV: NavDef[] = [
+  { href: "/", label: "Dashboard", icon: DashboardIcon },
+  { href: "/organisations", label: "Organisations", icon: OrgIcon },
+  { href: "/members", label: "Members", icon: MembersIcon },
+];
+const FOOTER: NavDef[] = [{ href: "/settings", label: "Settings", icon: SettingsIcon }];
+
+export function AppNav({ email, children }: { email: string; children: ReactNode }) {
   const pathname = usePathname();
-  const t = useTranslations("nav");
-
-  const toItem = (c: NavConfigItem): NavItem => ({
-    href: c.href,
-    label: t(c.labelKey),
-    icon: c.icon,
-    active: pathname === c.href || pathname.startsWith(`${c.href}/`),
+  const toItem = (c: NavDef): NavItem => ({
+    ...c,
+    active: c.href === "/" ? pathname === "/" : pathname.startsWith(c.href),
   });
-
   return (
     <AppShell
-      items={PRIMARY_NAV.map(toItem)}
-      footerItems={FOOTER_NAV.map(toItem)}
-      brand="DronOps"
+      items={NAV.map(toItem)}
+      footerItems={FOOTER.map(toItem)}
+      brand="DOM"
       linkComponent={LinkAdapter}
       topbar={
         <>
-          <span className="text-small text-fg-muted">Aironov</span>
+          <span className="text-small text-fg-muted">{email}</span>
           <div className="ms-auto flex items-center gap-2">
             <ThemeToggle className="rounded-md border border-default bg-surface px-3 py-1.5 text-small text-fg-secondary hover:bg-hover" />
-            <Button variant="ghost" size="sm" onClick={() => void signOut({ redirectTo: "/signin" })}>
-              Sign out
-            </Button>
+            <SignOutButton />
           </div>
         </>
       }

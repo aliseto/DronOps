@@ -1,47 +1,46 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { getCurrentUser } from "@/lib/session";
-import { getActiveOrgId, setActiveOrgCookie } from "@/server/active-org";
-import {
-  createOrganization,
-  disableJurisdiction,
-  enableJurisdiction,
-  inviteMember,
-} from "@/server/org";
+import { redirect } from "next/navigation";
+import { sql } from "drizzle-orm";
+import { schema } from "@dom/db";
+import { createTenantInput, REGULATOR_CODES, type RegulatorCode } from "@dom/core";
+import { getSessionUser } from "@/lib/session";
+import { withRls } from "@/lib/db";
 
-async function actor() {
-  const user = await getCurrentUser();
-  if (!user?.id || !user.email) throw new Error("Not authenticated");
-  return { userId: user.id, email: user.email };
-}
+const JURISDICTION: Record<RegulatorCode, string> = {
+  GCAA: "UAE",
+  DCAA: "UAE",
+  GACA: "KSA",
+  OMAN: "OMAN",
+};
 
-export async function createOrgAction(formData: FormData) {
-  const a = await actor();
-  const name = String(formData.get("name") ?? "").trim();
-  if (!name) return;
-  const org = await createOrganization(a, name);
-  await setActiveOrgCookie(org.id);
-  revalidatePath("/onboarding");
-}
+export async function createTenantAndOrgAction(formData: FormData) {
+  const user = await getSessionUser();
+  if (!user) throw new Error("Not authenticated");
 
-export async function toggleJurisdictionAction(formData: FormData) {
-  const a = await actor();
-  const key = String(formData.get("key") ?? "");
-  const isEnabled = String(formData.get("enabled") ?? "") === "true";
-  const orgId = await getActiveOrgId(a.userId);
-  if (!orgId || !key) return;
-  if (isEnabled) await disableJurisdiction(a, orgId, key);
-  else await enableJurisdiction(a, orgId, key);
-  revalidatePath("/onboarding");
-}
+  const tenantName = String(formData.get("tenantName") ?? "").trim();
+  const orgName = String(formData.get("orgName") ?? "").trim();
+  const regulatorCode = String(formData.get("regulatorCode") ?? "GCAA") as RegulatorCode;
 
-export async function inviteMemberAction(formData: FormData) {
-  const a = await actor();
-  const email = String(formData.get("email") ?? "").trim();
-  const role = String(formData.get("role") ?? "member") === "admin" ? "admin" : "member";
-  const orgId = await getActiveOrgId(a.userId);
-  if (!orgId || !email) return;
-  await inviteMember(a, orgId, email, role);
-  revalidatePath("/onboarding");
+  createTenantInput.parse({ tenantName });
+  if (!orgName) throw new Error("Enter an organisation name");
+  if (!REGULATOR_CODES.includes(regulatorCode)) throw new Error("Unknown regulator");
+
+  const claims = { sub: user.id, email: user.email };
+  await withRls(claims, async (db) => {
+    const tenant = (await db.execute(
+      sql`select app.create_tenant(${tenantName}) as id`,
+    )) as unknown as { id: string }[];
+    const reg = (await db.execute(
+      sql`select id from public.regulators where code = ${regulatorCode}`,
+    )) as unknown as { id: string }[];
+    await db.insert(schema.organisations).values({
+      tenantId: tenant[0]!.id,
+      name: orgName,
+      primaryRegulatorId: reg[0]!.id,
+      jurisdiction: JURISDICTION[regulatorCode],
+    });
+  });
+
+  redirect("/");
 }

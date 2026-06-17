@@ -2,29 +2,22 @@
   "name": "dronops",
   "version": "0.0.0",
   "private": true,
-  "description": "DronOps (by Aironov) — multi-tenant SaaS for licensed drone operators: UAV operations + QMS compliance.",
+  "description": "DronOps design system (by Aironov) — graphite dual-theme tokens + React component kit. Application is being rebuilt from a forthcoming design plan.",
   "type": "module",
   "packageManager": "pnpm@10.33.0",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "db:generate": "pnpm --filter @dronops/db db:generate",
-    "db:migrate": "pnpm --filter @dronops/db db:migrate",
-    "db:seed": "pnpm --filter @dronops/db db:seed"
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
-    "@playwright/test": "catalog:",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "eslint-config-prettier": "catalog:",

@@ -1,11 +1,12 @@
 import type { NextConfig } from "next";
-import createNextIntlPlugin from "next-intl/plugin";
-
-const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
-  // Source-only workspace packages are transpiled by Next rather than prebuilt.
-  transpilePackages: ["@dronops/ui", "@dronops/db", "@dronops/shared", "@dronops/content", "@dronops/parsers"],
+  // @dronops/ui and the @dom/* packages are consumed as TypeScript source.
+  transpilePackages: ["@dronops/ui", "@dom/core", "@dom/adapters", "@dom/db"],
+  experimental: {
+    // server actions / RLS bridge run on the Node runtime
+    serverActions: { bodySizeLimit: "5mb" },
+  },
 };
 
-export default withNextIntl(nextConfig);
+export default nextConfig;

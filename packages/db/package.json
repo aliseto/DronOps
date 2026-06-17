@@ -1,29 +1,27 @@
 {
-  "name": "@dronops/db",
+  "name": "@dom/db",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./schema": "./src/schema/index.ts",
-    "./client": "./src/client.ts"
+    "./schema": "./src/schema/index.ts"
   },
   "scripts": {
+    "migrate": "tsx src/migrate.ts",
+    "seed": "tsx seed/seed.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx src/migrate.ts",
-    "db:seed": "tsx src/seed.ts"
+    "test": "vitest run"
   },
   "dependencies": {
-    "@dronops/shared": "workspace:*",
     "drizzle-orm": "catalog:",
     "postgres": "catalog:"
   },
   "devDependencies": {
-    "drizzle-kit": "catalog:",
-    "tsx": "^4.19.0",
+    "@types/node": "catalog:",
+    "dotenv": "catalog:",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
