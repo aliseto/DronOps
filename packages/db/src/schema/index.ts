@@ -7,8 +7,10 @@
  */
 import {
   boolean,
+  date,
   integer,
   jsonb,
+  numeric,
   pgEnum,
   pgTable,
   text,
@@ -167,4 +169,135 @@ export const auditLog = pgTable("audit_log", {
   before: jsonb("before"),
   after: jsonb("after"),
   at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ── M1 Fleet & Inventory (profile → instance) ───────────────────────────────
+
+export const droneProfiles = pgTable("drone_profiles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id").notNull(),
+  brand: text("brand").notNull(),
+  model: text("model").notNull(),
+  defaultType: text("default_type"),
+  airframeType: text("airframe_type"),
+  propulsion: text("propulsion"),
+  defaultWeightG: numeric("default_weight_g"),
+  defaultMaxDimM: numeric("default_max_dim_m"),
+  maxSpeedMs: numeric("max_speed_ms"),
+  remoteIdCapable: boolean("remote_id_capable").default(false),
+  defaultSpecs: jsonb("default_specs").notNull().default({}),
+  defaultInspectionConfig: jsonb("default_inspection_config").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const drones = pgTable("drones", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull(),
+  profileId: uuid("profile_id"),
+  name: text("name").notNull(),
+  serial: text("serial"),
+  registration: text("registration"),
+  systemNumber: text("system_number"),
+  dateAdded: date("date_added"),
+  remoteId: text("remote_id"),
+  colour: text("colour"),
+  mtomG: numeric("mtom_g"),
+  maxDimM: numeric("max_dim_m"),
+  maxSpeedMs: numeric("max_speed_ms"),
+  propulsion: text("propulsion"),
+  totalFlightHours: numeric("total_flight_hours").notNull().default("0"),
+  status: text("status").notNull().default("active"),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const batteryProfiles = pgTable("battery_profiles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id").notNull(),
+  brand: text("brand"),
+  model: text("model"),
+  batteryType: text("battery_type"),
+  capacityMah: numeric("capacity_mah"),
+  voltageV: numeric("voltage_v"),
+  cycleLimit: integer("cycle_limit"),
+  healthCheckRecommendation: text("health_check_recommendation"),
+  compatibleAircraft: jsonb("compatible_aircraft").notNull().default([]),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const batteries = pgTable("batteries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull(),
+  profileId: uuid("profile_id"),
+  serial: text("serial"),
+  systemNumber: text("system_number"),
+  dateAdded: date("date_added"),
+  status: text("status").notNull().default("active"),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const controllerProfiles = pgTable("controller_profiles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id").notNull(),
+  brand: text("brand"),
+  model: text("model"),
+  type: text("type"),
+  firmware: text("firmware"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const controllers = pgTable("controllers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull(),
+  profileId: uuid("profile_id"),
+  rcSerial: text("rc_serial"),
+  systemNumber: text("system_number"),
+  dateAdded: date("date_added"),
+  pairedAircraftId: uuid("paired_aircraft_id"),
+  status: text("status").notNull().default("active"),
+  notes: text("notes"),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const equipmentProfiles = pgTable("equipment_profiles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id").notNull(),
+  brand: text("brand"),
+  model: text("model"),
+  category: text("category"),
+  maintenanceSchedule: text("maintenance_schedule"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const equipment = pgTable("equipment", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull(),
+  profileId: uuid("profile_id"),
+  name: text("name").notNull(),
+  type: text("type"),
+  serial: text("serial"),
+  systemNumber: text("system_number"),
+  dateAdded: date("date_added"),
+  status: text("status").notNull().default("active"),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const documents = pgTable("documents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull(),
+  ownerType: text("owner_type").notNull(),
+  ownerId: uuid("owner_id"),
+  title: text("title").notNull(),
+  docType: text("doc_type"),
+  storagePath: text("storage_path"),
+  issuedOn: date("issued_on"),
+  expiresOn: date("expires_on"),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

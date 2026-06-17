@@ -4,7 +4,7 @@ import type { ComponentType, ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AppShell, ThemeToggle, type LinkComponent, type NavItem } from "@dronops/ui";
-import { DashboardIcon, MembersIcon, OrgIcon, SettingsIcon } from "./nav-icons";
+import { DashboardIcon, FleetIcon, MembersIcon, SettingsIcon } from "./nav-icons";
 import { SignOutButton } from "./SignOutButton";
 
 const LinkAdapter: LinkComponent = ({ href, className, children, ...rest }) => (
@@ -17,7 +17,7 @@ type NavDef = { href: string; label: string; icon: ComponentType<{ width?: numbe
 
 const NAV: NavDef[] = [
   { href: "/", label: "Dashboard", icon: DashboardIcon },
-  { href: "/organisations", label: "Organisations", icon: OrgIcon },
+  { href: "/fleet", label: "Fleet", icon: FleetIcon },
   { href: "/members", label: "Members", icon: MembersIcon },
 ];
 const FOOTER: NavDef[] = [{ href: "/settings", label: "Settings", icon: SettingsIcon }];
