@@ -39,6 +39,12 @@ export const MembersIcon = base(
     <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
   </>,
 );
+export const CrewIcon = base(
+  <>
+    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </>,
+);
 export const SettingsIcon = base(
   <>
     <circle cx="12" cy="12" r="3" />
