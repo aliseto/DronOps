@@ -301,3 +301,65 @@ export const documents = pgTable("documents", {
   archivedAt: timestamp("archived_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ── M2 Personnel & Crew ──────────────────────────────────────────────────────
+
+export const personnel = pgTable("personnel", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull(),
+  profileId: uuid("profile_id"),
+  systemNumber: text("system_number"),
+  fullName: text("full_name").notNull(),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  roleTitle: text("role_title"),
+  email: text("email"),
+  phone: text("phone"),
+  employmentType: text("employment_type"),
+  nationality: text("nationality"),
+  status: text("status").notNull().default("active"),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const certifications = pgTable("certifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull(),
+  personnelId: uuid("personnel_id").notNull(),
+  type: text("type").notNull(),
+  scope: text("scope"),
+  issuer: text("issuer"),
+  number: text("number"),
+  issuedOn: date("issued_on"),
+  expiresOn: date("expires_on"),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const skills = pgTable("skills", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id"),
+  category: text("category").notNull(),
+  name: text("name").notNull(),
+  isCustom: boolean("is_custom").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const personnelSkills = pgTable("personnel_skills", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull(),
+  personnelId: uuid("personnel_id").notNull(),
+  skillId: uuid("skill_id").notNull(),
+  level: text("level"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const approvedAircraft = pgTable("approved_aircraft", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull(),
+  personnelId: uuid("personnel_id").notNull(),
+  droneProfileId: uuid("drone_profile_id").notNull(),
+  dateApproved: date("date_approved"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
