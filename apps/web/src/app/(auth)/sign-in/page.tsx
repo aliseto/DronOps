@@ -16,14 +16,18 @@ export default function SignInPage() {
     e.preventDefault();
     setError(null);
     start(async () => {
-      const supabase = createSupabaseBrowserClient();
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        setError(error.message);
-        return;
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          setError(error.message);
+          return;
+        }
+        router.replace("/");
+        router.refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Sign-in failed");
       }
-      router.replace("/");
-      router.refresh();
     });
   }
 
