@@ -44,6 +44,12 @@ export const MembersIcon = base(
     <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
   </>,
 );
+export const EvidenceIcon = base(
+  <>
+    <path d="M3 3v18h18" />
+    <path d="M19 9l-5 5-4-4-4 4" />
+  </>,
+);
 export const CrewIcon = base(
   <>
     <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
