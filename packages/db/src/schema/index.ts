@@ -6,6 +6,7 @@
  * Phase 0 are mirrored here.
  */
 import {
+  bigint,
   boolean,
   date,
   integer,
@@ -432,5 +433,20 @@ export const flights = pgTable("flights", {
   siteName: text("site_name"),
   maxAltitudeM: numeric("max_altitude_m"),
   hasDeviation: boolean("has_deviation").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const parseStatus = pgEnum("parse_status", ["pending", "processing", "parsed", "failed"]);
+
+export const flightLogs = pgTable("flight_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull(),
+  operationId: uuid("operation_id"),
+  flightId: uuid("flight_id"),
+  sourceFormat: text("source_format"),
+  storagePath: text("storage_path"),
+  sizeBytes: bigint("size_bytes", { mode: "number" }),
+  parseStatus: parseStatus("parse_status").notNull().default("pending"),
+  parseError: text("parse_error"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

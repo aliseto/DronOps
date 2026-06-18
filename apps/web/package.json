@@ -14,6 +14,7 @@
     "@dom/adapters": "workspace:*",
     "@dom/core": "workspace:*",
     "@dom/db": "workspace:*",
+    "@dom/parsers": "workspace:*",
     "@dronops/ui": "workspace:*",
     "@supabase/ssr": "catalog:",
     "@supabase/supabase-js": "catalog:",
